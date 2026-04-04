@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { parseFile } from "@/lib/parser";
-import { cleanTransactions } from "@/lib/cleaner";
-import { categorize, getCategoryCounts } from "@/lib/categorizer";
-import { calculateSummary } from "@/lib/calculator";
-import { Storage } from "@/lib/storage";
+import { parseFile } from "../../../lib/parser";
+import { cleanTransactions } from "../../../lib/cleaner";
+import { categorize, getCategoryCounts } from "../../../lib/categorizer";
+import { calculateSummary } from "../../../lib/calculator";
+import { Storage } from "../../../lib/storage";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const HOMEPAGE_PREVIEW_COUNT = 12;
