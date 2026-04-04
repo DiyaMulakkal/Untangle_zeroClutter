@@ -18,38 +18,54 @@ export default function Home() {
         const file = e.target.files[0];
         if (!file) return;
 
-        setLoading(true);
+        //setLoading(true);
 
-        try {
-            const formData = new FormData();
-            formData.append("file", file);
+        // try {
+        //     const formData = new FormData();
+        //     formData.append("file", file);
 
-            // 1. Upload file
-            const uploadRes = await fetch("/api/upload", {
-                method: "POST",
-                body: formData,
-            });
+        //     // 1. Upload file
+        //     const uploadRes = await fetch("/api/upload", {
+        //         method: "POST",
+        //         body: formData,
+        //     });
 
-            const uploadData = await uploadRes.json();
-            localStorage.setItem("sessionId", uploadData.sessionId);
-            const sessionId = uploadData.sessionId;
-
-
-            // 2. Fetch summary
-            const summaryRes = await fetch(`/api/summary?sessionId=${sessionId}`);
-            const summaryData = await summaryRes.json();
-
-            // 3. Store
-            setSummary(summaryData);
-
-            // 🔥 IMPORTANT: store sessionId
+        //     const uploadData = await uploadRes.json();
+        //     localStorage.setItem("sessionId", uploadData.sessionId);
+        //     const sessionId = uploadData.sessionId;
 
 
-        } catch (err) {
-            console.error(err);
-        }
+        //     // 2. Fetch summary
+        //     // const summaryRes = await fetch(`/api/summary?sessionId=${sessionId}`);
+        //     //const summaryData = await summaryRes.json();
 
-        setLoading(false);
+        //     // 3. Store
+        //     setSummary(summaryData.summary);
+        //     setTransactions(summaryData.transactions);
+
+        //     // 🔥 IMPORTANT: store sessionId
+
+
+        // } catch (err) {
+        //     console.error(err);
+        // }
+
+        //setLoading(false);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+        });
+
+        const data = await res.json();
+
+        console.log("UPLOAD DATA:", data);
+
+        // ✅ USE DATA DIRECTLY
+        setSummary(data.summary);
+        setTransactions(data.transactions);
     };
 
     return (

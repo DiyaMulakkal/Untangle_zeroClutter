@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
         //     forecast,
         // });
 
-        return NextResponse.json({ sessionId, ...uploadMeta }, { status: 200 });
+        return NextResponse.json({ sessionId, summary, transactions, uploadMeta }, { status: 200 });
     } catch (err: unknown) {
         const errorBody = err instanceof Error ? {
             message: err.message,
