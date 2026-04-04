@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { parseFile } from "@/lib/parser";
-import { cleanTransactions } from "@/lib/cleaner";
-import { categorize, getCategoryCounts } from "@/lib/categorizer";
-import { calculateSummary } from "@/lib/calculator";
-import { Storage } from "@/lib/storage";
+import { parseFile } from "../../../lib/parser";
+import { normalizeTransactions } from "../../../lib/cleaner";
+import { categorize, getCategoryCounts } from "../../../lib/categorizer";
+import { calculateSummary } from "../../../lib/calculator";
+import { Storage } from "../../../lib/storage";
 
 const MAX_FILE_SIZE_MB = 5;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const cleaned = cleanTransactions(raw);
+        const cleaned = normalizeTransactions(raw);
         if (cleaned.length === 0) {
             return NextResponse.json(
                 {
@@ -91,7 +91,14 @@ export async function POST(req: NextRequest) {
 
         Storage.set(sessionId, { transactions: categorized, summary, uploadMeta });
 
-        return NextResponse.json({ sessionId, ...uploadMeta }, { status: 200 });
+        return NextResponse.json(
+            {
+                sessionId,
+                summary,
+                ...uploadMeta,
+            },
+            { status: 200 }
+        );
     } catch (err: unknown) {
         console.error("[/api/upload] Unhandled error:", err);
         return NextResponse.json(

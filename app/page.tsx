@@ -31,16 +31,19 @@ export default function Home() {
             });
 
             const uploadData = await uploadRes.json();
+            localStorage.setItem("sessionId", uploadData.sessionId);
+            const sessionId = uploadData.sessionId;
+
 
             // 2. Fetch summary
-            const summaryRes = await fetch(`/api/summary?sessionId=${uploadData.sessionId}`);
+            const summaryRes = await fetch(`/api/summary?sessionId=${sessionId}`);
             const summaryData = await summaryRes.json();
 
             // 3. Store
             setSummary(summaryData);
 
             // 🔥 IMPORTANT: store sessionId
-            localStorage.setItem("sessionId", uploadData.sessionId);
+
 
         } catch (err) {
             console.error(err);
