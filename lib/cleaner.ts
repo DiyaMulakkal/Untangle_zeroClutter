@@ -10,7 +10,7 @@ const DATE_ALIASES = [
     "txn date", "txn_date", "Txn Date",
     "posting date", "posting_date", "Posting Date",
     "value date", "value_date", "Value Date",
-    "trans date", "trans_date",
+    "trans date", "trans_date", "Entry Date",
 ];
 
 const DESC_ALIASES = [
@@ -23,14 +23,14 @@ const DESC_ALIASES = [
     "remarks", "Remarks",
     "note", "Note", "memo", "Memo",
     "name", "Name",
-    "details", "Details",
+    "details", "Details", "Chq/Ref Number", "Ref No",
 ];
 
 const AMOUNT_ALIASES = [
     "amount", "Amount", "AMOUNT",
     "transaction amount", "Transaction Amount", "transaction_amount",
     "value", "Value",
-    "net amount", "Net Amount",
+    "net amount", "Net Amount", "Amount (INR)", "Amount (LCY)",
 ];
 
 const DEBIT_ALIASES = [
@@ -38,7 +38,7 @@ const DEBIT_ALIASES = [
     "withdrawal", "Withdrawal", "WITHDRAWAL",
     "dr", "Dr", "DR",
     "debit amount", "Debit Amount", "debit_amount",
-    "withdrawn", "Withdrawn",
+    "withdrawn", "Withdrawn", "Withdrawal Amt.", "Withdrawl",
 ];
 
 const CREDIT_ALIASES = [
@@ -46,7 +46,7 @@ const CREDIT_ALIASES = [
     "deposit", "Deposit", "DEPOSIT",
     "cr", "Cr", "CR",
     "credit amount", "Credit Amount", "credit_amount",
-    "deposited", "Deposited",
+    "deposited", "Deposited", "Deposit Amt.",
 ];
 
 const BALANCE_ALIASES = [
@@ -54,6 +54,13 @@ const BALANCE_ALIASES = [
     "running balance", "running_balance",
     "closing balance", "closing_balance",
     "balance amt", "Balance Amt", "BALANCE AMT",
+    "available balance", "Available Balance",
+];
+
+// Combine all major aliases for header detection
+export const ALL_HEADER_ALIASES = [
+    ...DATE_ALIASES, ...DESC_ALIASES, ...AMOUNT_ALIASES,
+    ...DEBIT_ALIASES, ...CREDIT_ALIASES, ...BALANCE_ALIASES
 ];
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

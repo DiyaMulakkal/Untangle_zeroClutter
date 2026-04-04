@@ -1,5 +1,40 @@
 import { RawTransaction } from "./types";
 import * as xlsx from "xlsx";
+import { ALL_HEADER_ALIASES } from "./cleaner";
+
+/**
+ * Scans a 2D array of strings to find the row that most likely contains
+ * the table headers (Date, Description, Amount, etc.)
+ */
+function findHeaderIndex(rows: string[][]): number {
+    let bestIndex = 0;
+    let maxMatches = 0;
+
+    // Scan first 50 rows (most bank statements have metadata in top 10-20 lines)
+    for (let i = 0; i < Math.min(rows.length, 50); i++) {
+        const row = rows[i].map(c => c.toLowerCase().trim());
+        let matches = 0;
+
+        for (const cell of row) {
+            if (!cell) continue;
+            // Check if cell contains or is contained by any known alias
+            if (ALL_HEADER_ALIASES.some(alias => 
+                cell.includes(alias.toLowerCase()) || 
+                alias.toLowerCase().includes(cell)
+            )) {
+                matches++;
+            }
+        }
+
+        // Standard requirement: At least 3 matching headers to be considered a table
+        if (matches > maxMatches && matches >= 3) {
+            maxMatches = matches;
+            bestIndex = i;
+        }
+    }
+
+    return bestIndex;
+}
 
 // ---------------------------------------------------------------------------
 // Lightweight CSV parser — no external dependency needed
@@ -9,19 +44,22 @@ function parseCSVText(text: string): RawTransaction[] {
     const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim().split("\n");
     if (lines.length < 2) return [];
 
-    const headers = splitCSVLine(lines[0]);
-
+    const matrix = lines.map(line => splitCSVLine(line));
+    const headerIdx = findHeaderIndex(matrix);
+    
+    const headers = matrix[headerIdx];
     const rows: RawTransaction[] = [];
-    for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        const values = splitCSVLine(line);
-        if (values.length === 0) continue;
+
+    for (let i = headerIdx + 1; i < matrix.length; i++) {
+        const values = matrix[i];
+        if (values.length === 0 || (values.length === 1 && !values[0])) continue;
 
         const row: RawTransaction = {};
         headers.forEach((header, idx) => {
             const clean = header.trim().replace(/^"|"$/g, "");
-            row[clean] = values[idx]?.trim().replace(/^"|"$/g, "") ?? "";
+            if (clean) {
+                row[clean] = values[idx]?.trim().replace(/^"|"$/g, "") ?? "";
+            }
         });
         rows.push(row);
     }
@@ -37,7 +75,6 @@ function splitCSVLine(line: string): string[] {
     for (let i = 0; i < line.length; i++) {
         const char = line[i];
         if (char === '"') {
-            // Handle escaped quotes ("")
             if (inQuotes && line[i + 1] === '"') {
                 current += '"';
                 i++;
@@ -70,11 +107,9 @@ function parseJSONText(text: string): RawTransaction[] {
 
     if (typeof parsed === "object" && parsed !== null) {
         const obj = parsed as Record<string, unknown>;
-        // Try common wrapper keys
         for (const key of ["transactions", "data", "records", "rows", "items"]) {
             if (Array.isArray(obj[key])) return obj[key] as RawTransaction[];
         }
-        // Single transaction object
         return [parsed as RawTransaction];
     }
 
@@ -88,13 +123,19 @@ function parseExcelBuffer(buffer: ArrayBuffer): RawTransaction[] {
     const workbook = xlsx.read(buffer, { type: "array", cellDates: true });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
-    // Convert to JSON array of objects, substituting empty values with "".
-    // raw: false ensures cells (especially dates) are formatted as strings.
+    
+    // Convert to 2D array first to find headers
+    const matrix = xlsx.utils.sheet_to_json<string[]>(worksheet, { header: 1, defval: "" });
+    const headerIdx = findHeaderIndex(matrix.map(row => row.map(cell => String(cell))));
+
+    // Now convert to objects starting from the detected header row
     const data = xlsx.utils.sheet_to_json<RawTransaction>(worksheet, { 
+        range: headerIdx,
         defval: "",
         raw: false,
         dateNF: "yyyy-mm-dd"
     });
+    
     return data;
 }
 
@@ -111,5 +152,5 @@ export function parseFile(content: string | ArrayBuffer, filename: string): RawT
 
     if (typeof content !== "string") throw new Error("Expected string for text files");
     if (ext === "json") return parseJSONText(content);
-    return parseCSVText(content); // default: treat as CSV
-}
+    return parseCSVText(content);
+}
