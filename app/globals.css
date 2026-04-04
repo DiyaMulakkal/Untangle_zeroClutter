@@ -126,3 +126,90 @@ body {
     color: #aaa;
     margin-top: 6px;
 }
+
+/* Buttons */
+.filter-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #f9fafb;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    background: #111827;
+    color: white;
+}
+
+.filter-btn.active {
+    background: #111827;
+    color: white;
+}
+
+/* Search */
+.search-box {
+    margin-left: auto;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    width: 250px;
+}
+
+/* Table */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead {
+    color: #6b7280;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+th {
+    padding: 12px 0;
+    text-align: left;
+}
+
+td {
+    padding: 14px 0;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* Amount styling */
+.amount-negative {
+    color: #dc2626;
+    font-weight: 500;
+}
+
+.amount-positive {
+    color: #16a34a;
+    font-weight: 500;
+}
+
+.amount-negative {
+    color: #dc2626;
+    font-weight: 500;
+}
+
+.amount-positive {
+    color: #16a34a;
+    font-weight: 500;
+}
+
+.dropdown {
+    padding: 8px 14px;
+    background-color: #393a3a;
+    color: white;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    width: 180px;
+}
+
+option {
+    background-color: white;
+    color: black;
+}
