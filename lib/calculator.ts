@@ -13,6 +13,12 @@ function daysBetween(a: string, b: string): number {
     return Math.max(1, Math.round(ms / 86400000) + 1);
 }
 
+function shiftDate(date: string, days: number): string {
+    return new Date(new Date(date).getTime() + days * 86400000)
+        .toISOString()
+        .slice(0, 10);
+}
+
 // ─────────────────────────────────────────────────────────────
 // CORE CALCULATOR (FIXED + STABLE)
 // ─────────────────────────────────────────────────────────────
@@ -99,9 +105,8 @@ export function calculateSummary(
     let committedExpenses = 0;
 
     if (recurringTx.length > 0) {
-        const ninetyDaysAgo = new Date(
-            Date.now() - 90 * 86400000
-        ).toISOString().slice(0, 10);
+        const latestTransactionDate = dates[dates.length - 1];
+        const ninetyDaysAgo = shiftDate(latestTransactionDate, -90);
 
         const recentRecurring = recurringTx.filter(
             t => t.date >= ninetyDaysAgo
