@@ -2,17 +2,33 @@ export interface RawTransaction {
     [key: string]: string | number | undefined;
 }
 
+export type TransactionType = "recurring" | "discretionary";
+
 export interface Transaction {
-    date: string;         // ISO format: YYYY-MM-DD
+    date: string;
     description: string;
     amount: number;       // positive = credit/income, negative = debit/expense
     category: string;
-    balance?: number;     // running balance from bank statement (if available)
+    account: string;      // logical account name
+    type: TransactionType;
+    isAnomaly: boolean;
+    anomalyReason: string | null;
+    balance?: number;     // optional running balance from statement
+}
+
+export interface RecurringPattern {
+    description: string;
+    category: string;
+    amount: number;
+    frequency: "weekly" | "monthly";
+    nextExpected?: string;
 }
 
 export interface UploadResponse {
     sessionId: string;
     transactionCount: number;
+    imported: number;
+    duplicatesRemoved: number;
     dateRange: {
         from: string;
         to: string;
@@ -24,13 +40,38 @@ export interface Summary {
     sessionId: string;
     totalIncome: number;
     totalExpenses: number;
-    currentBalance: number;       // actual balance (from statement or computed)
-    netCashFlow: number;          // income − expenses over the period
+    currentBalance: number;
+    netFlow: number;
     avgDailySpend: number;
     runwayDays: number;
     safeToSpendPerDay: number;
+    committedExpenses: number;
+    availableForSpend: number;
+    recurringExpensesMonthly: number;
+    discretionaryMonthly: number;
     status: "Healthy" | "Warning" | "Critical";
     breakdown: Record<string, number>;
+    anomalyCount: number;
+    warning: string | null;
+}
+
+export interface ForecastDay {
+    day: number;
+    date: string;
+    safeToSpend: number;
+    cumulativeSpent: number;
+    remainingBalance: number;
+}
+
+export interface Forecast {
+    currentBalance: number;
+    committedExpenses: number;
+    availableForSpend: number;
+    safeDailySpend: number;
+    inflationAdjusted: boolean;
+    inflationRate: number;
+    days: ForecastDay[];
+    warning: string | null;
 }
 
 export interface StorageEntry {
