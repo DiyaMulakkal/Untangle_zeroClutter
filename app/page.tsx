@@ -1,73 +1,111 @@
+"use client";
+
+import { useRef, useState } from "react";
+
 export default function Home() {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [summary, setSummary] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+
+    const handleClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: any) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            setLoading(true);
+
+            await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            const res = await fetch("/api/summary");
+            const data = await res.json();
+
+            setSummary(data);
+        } catch (err) {
+            console.error(err);
+            alert("Something went wrong");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
-        <main style={{ padding: "40px", maxWidth: "1200px", margin: "auto" }}>
+        <main style={{ padding: "40px", maxWidth: "1000px", margin: "auto" }}>
 
-            {/* NAVBAR */}
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "60px" }}>
-                <h2>Untangle</h2>
+            <h2 style={{ marginBottom: "20px" }}>Untangle</h2>
 
+            <p style={{ color: "#6b7280" }}>ZERO-CLUTTER FINANCIAL FORECASTER</p>
+
+            <h1 style={{ fontSize: "60px", fontWeight: 800, lineHeight: 1.1 }}>
+                Know your <br />
+                <span style={{ fontStyle: "italic", fontWeight: 400 }}>exact</span> runway. <br />
+                Nothing else.
+            </h1>
+
+            <p style={{ color: "#6b7280", marginTop: "10px" }}>
+                Drop messy bank data. Get your safe-to-spend daily limit for the next 30 days.
+            </p>
+
+            <div style={{ marginTop: "30px", display: "flex", gap: "20px" }}>
+                <button onClick={handleClick} className="btn-primary">
+                    Upload CSV
+                </button>
+
+                <button className="btn-outline">
+                    See how it works
+                </button>
             </div>
 
-            {/* HERO */}
-            <div style={{ marginBottom: "80px" }}>
-                <p className="subtle">ZERO-CLUTTER FINANCIAL FORECASTER</p>
-
-                <h1 className="heading">
-                    Know your <br />
-                    <span style={{ fontStyle: "italic", fontWeight: 400 }}>exact</span> runway. <br />
-                    Nothing else.
-                </h1>
-
-                <p className="subtle" style={{ marginTop: "20px" }}>
-                    Drop messy bank data. Get your safe-to-spend daily limit for the next 30 days.
-                </p>
-
+            <div
+                onClick={handleClick}
+                style={{
+                    marginTop: "50px",
+                    border: "2px dashed #e5e7eb",
+                    padding: "60px",
+                    textAlign: "center",
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                }}
+            >
+                <h3>Drop transaction file here</h3>
+                <p style={{ color: "#6b7280" }}>CSV or JSON</p>
             </div>
 
-            {/* UPLOAD BOX */}
-            <div className="upload" style={{ display: "flex align-items-center justify-content-center" }}>
-                <div className="upload-box" style={{ marginBottom: "30px" }}>
-                    <h3>Drop transaction file here</h3>
-                    <p className="subtle">CSV or JSON</p>
+            <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+            />
+
+            {loading && <p style={{ marginTop: "20px" }}>Processing...</p>}
+
+            {summary && (
+                <div style={{ marginTop: "40px" }}>
+                    <h1 style={{ fontSize: "50px" }}>
+                        ₹{summary.daily} / day
+                    </h1>
+
+                    <p style={{ marginTop: "10px", color: "green" }}>
+                        Updated just now
+                    </p>
+
+                    <div style={{ marginTop: "20px" }}>
+                        <p>Total In: ₹{summary.totalIn}</p>
+                        <p>Total Out: ₹{summary.totalOut}</p>
+                        <p>Balance: ₹{summary.balance}</p>
+                    </div>
                 </div>
-                <div style={{ marginTop: "10px", marginBottom: "30px", display: "flex", gap: "20px" }}>
-                    <button className="btn-primary">Upload CSV</button>
-                    <button className="btn-outline">See how it works</button>
-                </div>
-            </div>
-
-            {/* RESULT SECTION */}
-            <div style={{ marginBottom: "60px" }}>
-                <p className="subtle">30-DAY RUNWAY</p>
-
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span className="big-number">₹847</span>
-                    <span className="subtle">/day safe-to-spend</span>
-                </div>
-
-                <p className="subtle" style={{ marginTop: "10px" }}>
-                    Next 30 days. Updated now. <span style={{ color: "green" }}>+₹62 vs last month</span>
-                </p>
-            </div>
-
-            {/* STATS */}
-            <div style={{ display: "flex", gap: "20px", marginBottom: "60px" }}>
-                <div className="card">
-                    <p className="subtle">total out</p>
-                    <h2 style={{ color: "red" }}>-₹38,420</h2>
-                </div>
-
-                <div className="card">
-                    <p className="subtle">total in</p>
-                    <h2 style={{ color: "green" }}>+₹82,000</h2>
-                </div>
-
-                <div className="card">
-                    <p className="subtle">balance</p>
-                    <h2>₹25,410</h2>
-                </div>
-            </div>
-
+            )}
         </main>
     );
 }
