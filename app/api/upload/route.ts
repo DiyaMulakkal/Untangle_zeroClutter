@@ -6,7 +6,7 @@ import { categorize, getCategoryCounts } from "@/lib/categorizer";
 import { calculateSummary } from "@/lib/calculator";
 import { Storage } from "@/lib/storage";
 
-const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
@@ -30,9 +30,9 @@ export async function POST(req: NextRequest) {
         // --- Validate file type ---
         const filename = file.name ?? "upload";
         const ext = filename.split(".").pop()?.toLowerCase();
-        if (!["csv", "json"].includes(ext ?? "")) {
+        if (!["csv", "json", "xlsx", "xls"].includes(ext ?? "")) {
             return NextResponse.json(
-                { error: "Unsupported file type. Upload a .csv or .json file." },
+                { error: "Unsupported file type. Upload a .csv, .json, or Excel file." },
                 { status: 400 }
             );
         }
@@ -46,15 +46,21 @@ export async function POST(req: NextRequest) {
         }
 
         // --- Read file content ---
-        let content: string;
+        let content: string | ArrayBuffer;
         try {
-            content = await file.text();
+            if (ext === "xlsx" || ext === "xls") {
+                content = await file.arrayBuffer();
+                if (content.byteLength === 0) {
+                    return NextResponse.json({ error: "File is empty." }, { status: 400 });
+                }
+            } else {
+                content = await file.text();
+                if (!content.trim()) {
+                    return NextResponse.json({ error: "File is empty." }, { status: 400 });
+                }
+            }
         } catch {
             return NextResponse.json({ error: "Could not read file content." }, { status: 400 });
-        }
-
-        if (!content.trim()) {
-            return NextResponse.json({ error: "File is empty." }, { status: 400 });
         }
 
         // --- Parse → Clean → Categorize → Calculate ---
