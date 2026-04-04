@@ -1,38 +1,42 @@
 "use client";
-import { useState } from "react";
-import FileUpload from "@/components/FileUpload";
-import SummaryGrid from "@/components/SummaryGrid";
-import { Summary, UploadResponse } from "@/lib/types";
-
-type AppState = "idle" | "loading" | "done" | "error";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Summary, Transaction, UploadResponse } from "@/lib/types";
 
 export default function Home() {
-    const [state, setState] = useState<AppState>("idle");
-    const [error, setError] = useState<string | null>(null);
-    const [uploadMeta, setUploadMeta] = useState<UploadResponse | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [summary, setSummary] = useState<Summary | null>(null);
+    const [transactions, setTransactions] = useState<Transaction[] | null>(null);
+    const [sessionId, setSessionId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
 
-    async function handleUpload(file: File) {
-        setState("loading");
+    const handleClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setLoading(true);
         setError(null);
-        setSummary(null);
-        setUploadMeta(null);
 
         try {
-            // Step 1: Upload and process
             const form = new FormData();
             form.append("file", file);
 
-            const uploadRes = await fetch("/api/upload", { method: "POST", body: form });
+            const uploadRes = await fetch("/api/upload", { 
+                method: "POST", 
+                body: form 
+            });
             const uploadData: UploadResponse & { error?: string } = await uploadRes.json();
 
             if (!uploadRes.ok || uploadData.error) {
                 throw new Error(uploadData.error ?? "Upload failed.");
             }
 
-            setUploadMeta(uploadData);
-
-            // Step 2: Fetch summary
             const summaryRes = await fetch(`/api/summary?sessionId=${uploadData.sessionId}`);
             const summaryData: Summary & { error?: string } = await summaryRes.json();
 
@@ -40,24 +44,22 @@ export default function Home() {
                 throw new Error(summaryData.error ?? "Failed to fetch summary.");
             }
 
-            setSummary(summaryData);
-            setState("done");
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Something went wrong.";
-            setError(msg);
-            setState("error");
-        }
-    }
+            setSessionId(uploadData.sessionId);
+            if (typeof window !== "undefined") {
+                window.localStorage.setItem("zeroClutterSessionId", uploadData.sessionId);
+            }
 
-    function reset() {
-        setState("idle");
-        setError(null);
-        setSummary(null);
-        setUploadMeta(null);
-    }
+            setSummary(summaryData as Summary);
+            setTransactions(((summaryData as Summary & { transactions?: Transaction[] }).transactions) || []);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
-        <div
+        <main
             style={{
                 maxWidth: "640px",
                 margin: "0 auto",
@@ -65,42 +67,12 @@ export default function Home() {
                 minHeight: "100vh",
             }}
         >
-            {/* ── Header ─────────────────────────────────────────────── */}
+            {/* Header */}
             <header style={{ marginBottom: "2.5rem" }}>
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.75rem",
-                        marginBottom: "0.4rem",
-                    }}
-                >
-                    <span
-                        style={{
-                            display: "inline-block",
-                            width: "6px",
-                            height: "6px",
-                            borderRadius: "50%",
-                            background: "var(--green)",
-                            animation: "blink 2s ease-in-out infinite",
-                        }}
-                    />
-                    <span
-                        style={{
-                            fontSize: "10px",
-                            letterSpacing: "0.2em",
-                            color: "var(--text-muted)",
-                        }}
-                    >
-                        FINANCIAL FORECASTER v1.0
-                    </span>
-                </div>
                 <h1
                     style={{
-                        fontFamily: "var(--font-display)",
                         fontSize: "clamp(1.6rem, 5vw, 2.25rem)",
                         fontWeight: 800,
-                        color: "var(--text)",
                         lineHeight: 1.1,
                         marginBottom: "0.5rem",
                     }}
@@ -109,140 +81,99 @@ export default function Home() {
                     <br />
                     <span style={{ color: "var(--green)" }}>Financial Clarity.</span>
                 </h1>
-                <p
-                    style={{
-                        color: "var(--text-muted)",
-                        fontSize: "12px",
-                        maxWidth: "400px",
-                        lineHeight: 1.7,
-                    }}
-                >
+                <p style={{ color: "#6b7280", fontSize: "12px", maxWidth: "400px" }}>
                     Upload a messy bank CSV or JSON. Get your balance, runway, and safe
                     daily spend — instantly.
                 </p>
             </header>
 
-            {/* ── Main content ───────────────────────────────────────── */}
-            {state !== "done" && (
-                <section>
-                    <FileUpload onUpload={handleUpload} loading={state === "loading"} />
+            <div className="upload-box" onClick={handleClick} style={{ cursor: "pointer" }}>
+                <h3>Drop transaction file here</h3>
+                <p style={{ color: "#6b7280" }}>CSV or JSON</p>
+            </div>
 
-                    {/* Sample file hint */}
-                    {state === "idle" && (
-                        <p
-                            style={{
-                                textAlign: "center",
-                                marginTop: "1rem",
-                                color: "var(--text-dim)",
-                                fontSize: "11px",
-                            }}
-                        >
-                            Need a test file?{" "}
-                            <a
-                                href="/sample.csv"
-                                download
-                                style={{
-                                    color: "var(--text-muted)",
-                                    textDecoration: "underline",
-                                    textDecorationColor: "var(--border)",
-                                }}
-                            >
-                                Download sample.csv
-                            </a>
-                        </p>
-                    )}
+            <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+            />
 
-                    {/* Error state */}
-                    {state === "error" && error && (
-                        <div
-                            style={{
-                                marginTop: "1rem",
-                                border: "1px solid var(--red)",
-                                borderRadius: "var(--radius-lg)",
-                                padding: "0.75rem 1rem",
-                                background: "var(--red-dim)",
-                            }}
-                        >
-                            <p
-                                style={{
-                                    color: "var(--red)",
-                                    fontSize: "11px",
-                                    letterSpacing: "0.08em",
-                                    marginBottom: "0.25rem",
-                                }}
-                            >
-                                ERROR
-                            </p>
-                            <p style={{ color: "var(--text)", fontSize: "12px" }}>{error}</p>
-                            <button
-                                onClick={reset}
-                                style={{
-                                    marginTop: "0.75rem",
-                                    background: "none",
-                                    border: "1px solid var(--border)",
-                                    color: "var(--text-muted)",
-                                    fontSize: "10px",
-                                    letterSpacing: "0.1em",
-                                    padding: "4px 12px",
-                                    cursor: "pointer",
-                                    borderRadius: "var(--radius)",
-                                }}
-                            >
-                                TRY AGAIN
-                            </button>
+            {loading && <p style={{ marginTop: "20px" }}>Processing...</p>}
+            {error && <p style={{ marginTop: "20px", color: "red" }}>Error: {error}</p>}
+
+            {summary && (
+                <>
+                    {/* DASHBOARD */}
+                    <h5 style={{ color: "#6b7280", marginTop: "40px", fontSize: "16px", opacity: "0.4" }}>30-day Runway</h5>
+                    <h1 style={{ fontSize: "50px", marginTop: "10px" }}>
+                        ₹{summary.avgDailySpend.toFixed(0)} <span style={{ color: "#6b7280", marginTop: "10px", fontSize: "16px", fontWeight: "400" }}>/ day safe-to-spend</span>
+                    </h1>
+                    <h5 style={{ color: "#6b7280", marginTop: "10px", fontWeight: "400" }}>Next 30 days. Updated Now.</h5>
+
+                    <div className="summary-container">
+                        <div className="summary-item">
+                            <p className="label">total out</p>
+                            <p className="value red">-₹{summary.totalExpenses.toFixed(0)}</p>
+                            <p className="sub">this period</p>
                         </div>
-                    )}
-                </section>
+
+                        <div className="summary-item">
+                            <p className="label">total in</p>
+                            <p className="value green">+₹{summary.totalIncome.toFixed(0)}</p>
+                            <p className="sub">this period</p>
+                        </div>
+
+                        <div className="summary-item">
+                            <p className="label">balance</p>
+                            <p className="value">₹{summary.currentBalance.toFixed(0)}</p>
+                            <p className="sub">available</p>
+                        </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+                        <button
+                            className="btn-ghost"
+                            onClick={() => sessionId && router.push(`/transactions?sessionId=${sessionId}`)}
+                        >
+                            View transactions
+                        </button>
+                        <button
+                            className="btn-ghost"
+                            onClick={() => sessionId && router.push(`/forecast?sessionId=${sessionId}`)}
+                        >
+                            Future prediction
+                        </button>
+                    </div>
+
+                    {/* TRANSACTIONS */}
+                    <h2 style={{ marginTop: "50px" }}>TRANSACTIONS</h2>
+
+                    <table style={{ width: "100%", marginTop: "20px" }}>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {transactions?.map((t, i) => (
+                                <tr key={i}>
+                                    <td>{t.date}</td>
+                                    <td>{t.description}</td>
+                                    <td>{t.category}</td>
+                                    <td className={t.amount < 0 ? "amount-negative" : "amount-positive"}>
+                                        ₹{Math.abs(t.amount).toFixed(2)}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </>
             )}
-
-            {/* ── Results ────────────────────────────────────────────── */}
-            {state === "done" && summary && uploadMeta && (
-                <section>
-                    <SummaryGrid
-                        summary={summary}
-                        dateRange={uploadMeta.dateRange}
-                        transactionCount={uploadMeta.transactionCount}
-                    />
-
-                    <button
-                        onClick={reset}
-                        style={{
-                            marginTop: "2.5rem",
-                            display: "block",
-                            background: "none",
-                            border: "none",
-                            color: "var(--text-dim)",
-                            fontSize: "11px",
-                            letterSpacing: "0.1em",
-                            cursor: "pointer",
-                            padding: 0,
-                        }}
-                    >
-                        ← UPLOAD ANOTHER FILE
-                    </button>
-                </section>
-            )}
-
-            {/* ── Footer ─────────────────────────────────────────────── */}
-            <footer
-                style={{
-                    marginTop: "4rem",
-                    paddingTop: "1.5rem",
-                    borderTop: "1px solid var(--border)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: "0.5rem",
-                }}
-            >
-                <span style={{ color: "var(--text-dim)", fontSize: "10px", letterSpacing: "0.1em" }}>
-                    FINANCIAL FORECASTER
-                </span>
-                <span style={{ color: "var(--text-dim)", fontSize: "10px" }}>
-                    Data never leaves your session · No DB · No tracking
-                </span>
-            </footer>
-        </div>
+        </main>
     );
 }

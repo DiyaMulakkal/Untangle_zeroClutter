@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildForecast } from "@/lib/forecast";
 import { Storage } from "@/lib/storage";
 
 export async function GET(req: NextRequest) {
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json(
-        { sessionId, ...entry.summary, transactions: entry.transactions },
+        { sessionId, ...buildForecast(entry.transactions, entry.summary.currentBalance) },
         { status: 200 }
     );
 }
