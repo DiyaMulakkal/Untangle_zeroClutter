@@ -55,9 +55,12 @@ export default function TransactionsPage() {
                 <label style={{ fontSize: "12px", opacity: "0.5", marginTop: "10px" }}>CATEGORY</label>
                 <select className="dropdown" style={{ fontSize: "14px", fontWeight: "bold" }} value={category} onChange={(e) => setCategory(e.target.value)}>
                     <option>All</option>
-                    <option>Food & Dining</option>
-                    <option>Cash Withdrawal</option>
-                    <option>Transfer</option>
+                    <option>Food</option>
+                    <option>Shopping</option>
+                    <option>Travel</option>
+                    <option>Bills</option>
+                    <option>Subscription</option>
+                    <option>Salary</option>
                     <option>Other</option>
                 </select>
 

@@ -161,31 +161,6 @@ export default function Home() {
                         </button>
 
                     </div>
-
-                    {/* TRANSACTIONS */}
-                    <h2 style={{ marginTop: "50px" }}>TRANSACTIONS</h2>
-
-                    <table style={{ width: "100%", marginTop: "20px" }}>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Description</th>
-                                <th>Category</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {transactions.map((t, i) => (
-                                <tr key={i}>
-                                    <td>{t.date}</td>
-                                    <td>{t.description}</td>
-                                    <td>{t.category}</td>
-                                    <td>₹{Math.abs(t.amount)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
                 </>
             )}
         </main>
