@@ -13,6 +13,15 @@ function daysBetween(a: string, b: string): number {
     return Math.max(1, Math.round(ms / 86400000) + 1);
 }
 
+<<<<<<< HEAD
+=======
+function shiftDate(date: string, days: number): string {
+    return new Date(new Date(date).getTime() + days * 86400000)
+        .toISOString()
+        .slice(0, 10);
+}
+
+>>>>>>> 8a13a53a78093328008a317d2b2b8c6634daf6e8
 // ─────────────────────────────────────────────────────────────
 // CORE CALCULATOR (FIXED + STABLE)
 // ─────────────────────────────────────────────────────────────
@@ -99,9 +108,14 @@ export function calculateSummary(
     let committedExpenses = 0;
 
     if (recurringTx.length > 0) {
+<<<<<<< HEAD
         const ninetyDaysAgo = new Date(
             Date.now() - 90 * 86400000
         ).toISOString().slice(0, 10);
+=======
+        const latestTransactionDate = dates[dates.length - 1];
+        const ninetyDaysAgo = shiftDate(latestTransactionDate, -90);
+>>>>>>> 8a13a53a78093328008a317d2b2b8c6634daf6e8
 
         const recentRecurring = recurringTx.filter(
             t => t.date >= ninetyDaysAgo
@@ -206,4 +220,8 @@ export function recalculateWithSpend(
         safeToSpendPerDay: round2(Math.max(0, safeToSpendPerDay)),
         status,
     };
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 8a13a53a78093328008a317d2b2b8c6634daf6e8
