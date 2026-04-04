@@ -37,11 +37,7 @@ function parseDate(raw: any): string | null {
 // MAIN NORMALIZER (FINAL FIXED)
 // ─────────────────────────────────────────────────────────────
 
-<<<<<<< HEAD
 export function cleanTransactions(
-=======
-export function normalizeTransactions(
->>>>>>> 5962df1b27244a37d4e0c96553da73cb0f1e2384
     raw: RawTransaction[],
     account = "default"
 ): { transactions: Transaction[]; errors: number } {
@@ -191,8 +187,4 @@ export function detectTransfers(transactions: Transaction[]): Transaction[] {
         const desc = tx.descriptionCleaned;
         return !TRANSFER_KEYWORDS.some((kw) => desc.includes(kw));
     });
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 5962df1b27244a37d4e0c96553da73cb0f1e2384

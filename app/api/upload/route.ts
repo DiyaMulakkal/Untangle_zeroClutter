@@ -69,13 +69,13 @@ export async function POST(req: NextRequest) {
 
         const categorized = categorize(cleaned);
         const sessionId = randomUUID();
-        const summary = calculateSummary(annotated);
-        const categoryCounts = getCategoryCounts(annotated);
+        const summary = calculateSummary(categorized);
+        const categoryCounts = getCategoryCounts(categorized);
 
-        const dates = annotated.map((t) => t.date).sort();
+        const dates = categorized.map((t) => t.date).sort();
         const uploadMeta = {
-            transactionCount: annotated.length,
-            imported: annotated.length,
+            transactionCount: categorized.length,
+            imported: categorized.length,
             duplicatesRemoved: totalDuplicatesRemoved,
             dateRange: { from: dates[0], to: dates[dates.length - 1] },
             categories: categoryCounts,

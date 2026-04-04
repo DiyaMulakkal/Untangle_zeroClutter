@@ -128,13 +128,8 @@ export function categorize(tx: Transaction): { type: TransactionType; category: 
 
     // Priority 1: Merchant/Description based matching
     for (const rule of CATEGORY_RULES) {
-<<<<<<< HEAD
         if (rule.keywords.some((kw) =>
             merchant.includes(kw.toLowerCase()) ||
-=======
-        if (rule.keywords.some((kw) => 
-            merchant.includes(kw.toLowerCase()) || 
->>>>>>> 237690f9837c9e4e6a071fc304976e3e3da71848
             desc.includes(kw.toLowerCase())
         )) {
             return { type: rule.type, category: rule.category };
@@ -230,8 +225,4 @@ export function detectRecurringPatterns(
     }
 
     return patterns;
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 237690f9837c9e4e6a071fc304976e3e3da71848
