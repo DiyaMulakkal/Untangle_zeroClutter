@@ -76,8 +76,17 @@ export interface Forecast {
     warning: string | null;
 }
 
+export interface AnalysisSnapshot {
+    sessionId: string;
+    summary: Summary;
+    transactions: Transaction[];
+    forecast: Forecast;
+    uploadMeta: Omit<UploadResponse, "sessionId">;
+}
+
 export interface StorageEntry {
     transactions: Transaction[];
     summary: Omit<Summary, "sessionId">;
     uploadMeta: Omit<UploadResponse, "sessionId">;
+    forecast: Forecast;
 }

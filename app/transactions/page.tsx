@@ -1,12 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Summary, Transaction } from "@/lib/types";
-
-type SummaryResponse = Summary & {
-    transactions?: Transaction[];
-    error?: string;
-};
+import { AnalysisSnapshot, Summary, Transaction } from "@/lib/types";
+import { loadAnalysis } from "@/lib/clientAnalysis";
 
 export default function TransactionsPage() {
     const [search, setSearch] = useState("");
@@ -18,21 +14,21 @@ export default function TransactionsPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const searchParams = new URLSearchParams(window.location.search);
-        const sessionId =
-            searchParams.get("sessionId") ||
-            window.localStorage.getItem("zeroClutterSessionId");
-
-        if (!sessionId) {
-            setError("No uploaded session found. Please upload a file first.");
-            setLoading(false);
-            return;
-        }
-
         async function loadTransactions() {
             try {
-                const response = await fetch(`/api/summary?sessionId=${sessionId}`);
-                const data: SummaryResponse = await response.json();
+                const snapshot: AnalysisSnapshot | null = await loadAnalysis();
+                if (!snapshot) {
+                    throw new Error("No uploaded analysis found. Please upload a file first.");
+                }
+
+                if (snapshot.transactions.length >= snapshot.uploadMeta.transactionCount) {
+                    setSummary(snapshot.summary);
+                    setTransactions(snapshot.transactions);
+                    return;
+                }
+
+                const response = await fetch(`/api/summary?sessionId=${snapshot.sessionId}`);
+                const data: (Summary & { transactions?: Transaction[]; error?: string }) = await response.json();
 
                 if (!response.ok || data.error) {
                     throw new Error(data.error ?? "Failed to load transactions.");
