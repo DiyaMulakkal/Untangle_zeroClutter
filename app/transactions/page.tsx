@@ -21,8 +21,21 @@ export default function TransactionsPage() {
                     throw new Error("No uploaded analysis found. Please upload a file first.");
                 }
 
-                setSummary(snapshot.summary);
-                setTransactions(snapshot.transactions);
+                if (snapshot.transactions.length >= snapshot.uploadMeta.transactionCount) {
+                    setSummary(snapshot.summary);
+                    setTransactions(snapshot.transactions);
+                    return;
+                }
+
+                const response = await fetch(`/api/summary?sessionId=${snapshot.sessionId}`);
+                const data: (Summary & { transactions?: Transaction[]; error?: string }) = await response.json();
+
+                if (!response.ok || data.error) {
+                    throw new Error(data.error ?? "Failed to load transactions.");
+                }
+
+                setSummary(data);
+                setTransactions(data.transactions ?? []);
             } catch (err: any) {
                 setError(err.message ?? "Failed to load transactions.");
             } finally {

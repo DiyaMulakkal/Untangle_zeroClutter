@@ -6,8 +6,10 @@ import { categorizeAll, getCategoryCounts } from "@/lib/categorizer";
 import { annotateAnomalies } from "@/lib/anomalyDetector";
 import { calculateSummary } from "@/lib/calculator";
 import { buildForecast } from "@/lib/forecast";
+import { Storage } from "@/lib/storage";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const HOMEPAGE_PREVIEW_COUNT = 12;
 
 export async function POST(req: NextRequest) {
     try {
@@ -98,10 +100,18 @@ export async function POST(req: NextRequest) {
 
         const forecast = buildForecast(annotated, summary.currentBalance);
 
+        // ── Persist to Cloud Storage (Redis) ──────────────────────────────────
+        await Storage.set(sessionId, {
+            transactions: annotated,
+            summary,
+            uploadMeta,
+            forecast,
+        });
+
         return NextResponse.json({
             sessionId,
             summary: { ...summary, sessionId },
-            transactions: annotated,
+            transactions: annotated.slice(0, HOMEPAGE_PREVIEW_COUNT),
             uploadMeta,
             forecast,
         }, { status: 200 });

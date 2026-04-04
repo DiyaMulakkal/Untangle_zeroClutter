@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
         );
     }
 
-    const entry = Storage.get(sessionId);
+    const entry = await Storage.get(sessionId);
     if (!entry) {
         return NextResponse.json(
             { error: "Session not found or expired. Please re-upload your file." },

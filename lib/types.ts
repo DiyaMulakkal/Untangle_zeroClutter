@@ -88,4 +88,5 @@ export interface StorageEntry {
     transactions: Transaction[];
     summary: Omit<Summary, "sessionId">;
     uploadMeta: Omit<UploadResponse, "sessionId">;
+    forecast: Forecast;
 }
