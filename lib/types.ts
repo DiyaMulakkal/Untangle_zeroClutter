@@ -7,15 +7,15 @@ export type TransactionType = "recurring" | "discretionary";
 export interface Transaction {
     date: string;
     description: string;
-    descriptionCleaned: string; // notebook: clean_text()
-    merchant: string;          // notebook: extract_merchant()
-    amount: number;       // positive = credit/income, negative = debit/expense
+    descriptionCleaned: string;
+    merchant: string;
+    amount: number; // +income, -expense
     category: string;
-    account: string;      // logical account name
-    type: TransactionType;
+    account: string;
+    type: "recurring" | "discretionary";
     isAnomaly: boolean;
     anomalyReason: string | null;
-    balance?: number;     // optional running balance from statement
+    balance?: number;
 }
 
 export interface RecurringPattern {

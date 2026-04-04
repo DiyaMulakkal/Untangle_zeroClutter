@@ -214,12 +214,18 @@ export function normalizeTransactions(
             const debit = debitKey ? parseAmount(row[debitKey]) : null;
             const credit = creditKey ? parseAmount(row[creditKey]) : null;
 
-            if (credit && credit > 0) amount = credit;
-            else if (debit && debit > 0) amount = -Math.abs(debit);
-            else if (debit !== null && credit !== null) amount = credit - debit;
+            // ✅ FIXED LOGIC
+            if (credit !== null && credit > 0) {
+                amount = credit;
+            } else if (debit !== null && debit > 0) {
+                amount = -Math.abs(debit);
+            } else if (credit !== null && debit !== null) {
+                amount = credit - debit;
+            }
         }
 
         if (amount === null || isNaN(amount) || amount === 0) { errors++; continue; }
+        if (Math.abs(amount) > 1e7) continue;
 
         const descriptionCleaned = cleanDescription(description);
         const merchant = extractMerchant(descriptionCleaned);

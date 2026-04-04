@@ -10,9 +10,14 @@ function findHeaderIndex(rows: string[][]): number {
     let bestIndex = 0;
     let maxMatches = 0;
 
+    if (!rows || rows.length === 0) return 0;
+
     // Scan first 50 rows (most bank statements have metadata in top 10-20 lines)
     for (let i = 0; i < Math.min(rows.length, 50); i++) {
-        const row = rows[i].map(c => c.toLowerCase().trim());
+        const rawRow = rows[i];
+        if (!Array.isArray(rawRow)) continue;
+
+        const row = rawRow.map(c => String(c || "").toLowerCase().trim());
         let matches = 0;
 
         for (const cell of row) {
@@ -45,17 +50,22 @@ function parseCSVText(text: string): RawTransaction[] {
     if (lines.length < 2) return [];
 
     const matrix = lines.map(line => splitCSVLine(line));
+    if (matrix.length === 0) return [];
+
     const headerIdx = findHeaderIndex(matrix);
     
     const headers = matrix[headerIdx];
+    if (!headers || headers.length === 0) return [];
+
     const rows: RawTransaction[] = [];
 
     for (let i = headerIdx + 1; i < matrix.length; i++) {
         const values = matrix[i];
-        if (values.length === 0 || (values.length === 1 && !values[0])) continue;
+        if (!values || values.length === 0 || (values.length === 1 && !values[0])) continue;
 
         const row: RawTransaction = {};
         headers.forEach((header, idx) => {
+            if (!header) return;
             const clean = header.trim().replace(/^"|"$/g, "");
             if (clean) {
                 row[clean] = values[idx]?.trim().replace(/^"|"$/g, "") ?? "";
