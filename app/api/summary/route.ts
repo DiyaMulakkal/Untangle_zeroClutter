@@ -3,6 +3,9 @@ import { Storage } from "@/lib/storage";
 
 export async function GET(req: NextRequest) {
     const sessionId = req.nextUrl.searchParams.get("sessionId");
+    const includeTransactions = req.nextUrl.searchParams.get("includeTransactions") !== "0";
+    const limitParam = req.nextUrl.searchParams.get("limit");
+    const limit = limitParam ? Math.max(0, parseInt(limitParam, 10) || 0) : 0;
 
     if (!sessionId) {
         return NextResponse.json(
@@ -19,8 +22,12 @@ export async function GET(req: NextRequest) {
         );
     }
 
+    const transactions = includeTransactions
+        ? (limit > 0 ? entry.transactions.slice(0, limit) : entry.transactions)
+        : undefined;
+
     return NextResponse.json(
-        { sessionId, ...entry.summary, transactions: entry.transactions },
+        { sessionId, ...entry.summary, transactions },
         { status: 200 }
     );
 }

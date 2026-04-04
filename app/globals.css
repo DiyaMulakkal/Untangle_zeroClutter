@@ -100,24 +100,76 @@ body {
     padding: 60px;
     text-align: center;
     border-radius: 10px;
+    transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.upload-box:hover {
+    border-color: var(--border-hover);
+    background: rgba(255, 255, 255, 0.015);
+}
+
+.upload-box-loading {
+    border-color: var(--green);
+    background: rgba(61, 255, 160, 0.05);
 }
 
 .btn-ghost {
     background: transparent;
-    color: black;
-    border: 1px solid #ddd;
+    color: var(--text);
+    border: 1px solid var(--border-hover);
     padding: 12px 22px;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
     font-weight: bold;
     font-size: 16px;
 }
 
 .btn-ghost:hover {
-    background: black;
-    color: white;
-    border-color: black;
+    background: rgba(61, 255, 160, 0.08);
+    color: var(--green);
+    border-color: var(--green);
+    transform: translateY(-1px);
+}
+
+.btn-ghost:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.loader-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.loader-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--green);
+    animation: pulseDots 1s ease-in-out infinite;
+}
+
+.loader-dots span:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.loader-dots span:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes pulseDots {
+    0%, 100% {
+        opacity: 0.35;
+        transform: scale(0.9);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .summary-container {

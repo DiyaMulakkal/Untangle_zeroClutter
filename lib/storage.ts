@@ -1,22 +1,48 @@
+import fs from "fs";
+import path from "path";
 import { StorageEntry } from "./types";
 
-// ---------------------------------------------------------------------------
-// In-memory store — resets on server restart (fine for hackathon demo)
-// For production: swap this module with Redis or a DB adapter
-// ---------------------------------------------------------------------------
+type PersistedSession = {
+    expiresAt: number;
+    data: StorageEntry;
+};
 
-const store = new Map<string, StorageEntry>();
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSIONS_DIR = path.join(process.cwd(), "tmp", "sessions");
+const PURGE_INTERVAL_MS = 15 * 60 * 1000;
+let lastPurgeAt = 0;
 
-// Auto-expire sessions after 2 hours to prevent unbounded memory growth
-const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
-const expiry = new Map<string, number>();
+function ensureSessionsDir() {
+    fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+}
+
+function sessionFile(id: string) {
+    return path.join(SESSIONS_DIR, `${id}.json`);
+}
 
 function purgeExpired() {
     const now = Date.now();
-    for (const [id, ts] of expiry.entries()) {
-        if (now > ts) {
-            store.delete(id);
-            expiry.delete(id);
+    if (now - lastPurgeAt < PURGE_INTERVAL_MS) {
+        return;
+    }
+
+    lastPurgeAt = now;
+    ensureSessionsDir();
+
+    for (const file of fs.readdirSync(SESSIONS_DIR)) {
+        if (!file.endsWith(".json")) continue;
+
+        const fullPath = path.join(SESSIONS_DIR, file);
+
+        try {
+            const raw = fs.readFileSync(fullPath, "utf8");
+            const session = JSON.parse(raw) as PersistedSession;
+
+            if (now > session.expiresAt) {
+                fs.unlinkSync(fullPath);
+            }
+        } catch {
+            fs.unlinkSync(fullPath);
         }
     }
 }
@@ -24,21 +50,52 @@ function purgeExpired() {
 export const Storage = {
     set(id: string, data: StorageEntry): void {
         purgeExpired();
-        store.set(id, data);
-        expiry.set(id, Date.now() + SESSION_TTL_MS);
+        ensureSessionsDir();
+
+        const payload: PersistedSession = {
+            expiresAt: Date.now() + SESSION_TTL_MS,
+            data,
+        };
+
+        fs.writeFileSync(sessionFile(id), JSON.stringify(payload), "utf8");
     },
 
     get(id: string): StorageEntry | null {
         purgeExpired();
-        return store.get(id) ?? null;
+        ensureSessionsDir();
+
+        const filePath = sessionFile(id);
+        if (!fs.existsSync(filePath)) {
+            return null;
+        }
+
+        try {
+            const raw = fs.readFileSync(filePath, "utf8");
+            const session = JSON.parse(raw) as PersistedSession;
+
+            if (Date.now() > session.expiresAt) {
+                fs.unlinkSync(filePath);
+                return null;
+            }
+
+            return session.data;
+        } catch {
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+            return null;
+        }
     },
 
     delete(id: string): void {
-        store.delete(id);
-        expiry.delete(id);
+        const filePath = sessionFile(id);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
     },
 
     size(): number {
-        return store.size;
+        ensureSessionsDir();
+        return fs.readdirSync(SESSIONS_DIR).filter((file) => file.endsWith(".json")).length;
     },
 };

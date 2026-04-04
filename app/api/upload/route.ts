@@ -5,7 +5,7 @@ import { normalizeTransactions, detectDuplicates, detectTransfers } from "@/lib/
 import { categorizeAll, getCategoryCounts } from "@/lib/categorizer";
 import { annotateAnomalies } from "@/lib/anomalyDetector";
 import { calculateSummary } from "@/lib/calculator";
-import { Storage } from "@/lib/storage";
+import { buildForecast } from "@/lib/forecast";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
@@ -96,9 +96,15 @@ export async function POST(req: NextRequest) {
             categories: categoryCounts,
         };
 
-        Storage.set(sessionId, { transactions: annotated, summary, uploadMeta });
+        const forecast = buildForecast(annotated, summary.currentBalance);
 
-        return NextResponse.json({ sessionId, ...uploadMeta }, { status: 200 });
+        return NextResponse.json({
+            sessionId,
+            summary: { ...summary, sessionId },
+            transactions: annotated,
+            uploadMeta,
+            forecast,
+        }, { status: 200 });
 
     } catch (err: unknown) {
         const errorBody = err instanceof Error ? {

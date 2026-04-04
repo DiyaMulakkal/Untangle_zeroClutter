@@ -1,40 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Forecast } from "@/lib/types";
-
-type ForecastResponse = Forecast & {
-    sessionId: string;
-    error?: string;
-};
+import { AnalysisSnapshot, Forecast } from "@/lib/types";
+import { loadAnalysis } from "@/lib/clientAnalysis";
 
 export default function ForecastPage() {
-    const [forecast, setForecast] = useState<ForecastResponse | null>(null);
+    const [forecast, setForecast] = useState<Forecast | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const searchParams = new URLSearchParams(window.location.search);
-        const sessionId =
-            searchParams.get("sessionId") ||
-            window.localStorage.getItem("zeroClutterSessionId");
-
-        if (!sessionId) {
-            setError("No uploaded session found. Please upload a file first.");
-            setLoading(false);
-            return;
-        }
-
         async function loadForecast() {
             try {
-                const response = await fetch(`/api/forecast?sessionId=${sessionId}`);
-                const data: ForecastResponse = await response.json();
-
-                if (!response.ok || data.error) {
-                    throw new Error(data.error ?? "Failed to load forecast.");
+                const snapshot: AnalysisSnapshot | null = await loadAnalysis();
+                if (!snapshot) {
+                    throw new Error("No uploaded analysis found. Please upload a file first.");
                 }
 
-                setForecast(data);
+                setForecast(snapshot.forecast);
             } catch (err: any) {
                 setError(err.message ?? "Failed to load forecast.");
             } finally {

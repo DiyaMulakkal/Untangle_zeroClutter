@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Summary, Transaction, UploadResponse } from "@/lib/types";
+import { AnalysisSnapshot, Summary, Transaction } from "@/lib/types";
+import { clearAnalysis, loadAnalysis, saveAnalysis } from "@/lib/clientAnalysis";
 
 export default function Home() {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -10,6 +11,8 @@ export default function Home() {
     const [transactions, setTransactions] = useState<Transaction[] | null>(null);
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [restoring, setRestoring] = useState(true);
+    const [statusText, setStatusText] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
@@ -39,6 +42,27 @@ export default function Home() {
         return `${sign}Rs ${formatCurrency(absolute)}`;
     }
 
+    useEffect(() => {
+        async function restoreSession() {
+            try {
+                const snapshot = await loadAnalysis();
+                if (!snapshot) {
+                    return;
+                }
+
+                setSessionId(snapshot.sessionId);
+                setSummary(snapshot.summary);
+                setTransactions(snapshot.transactions.slice(0, 12));
+            } catch {
+                // Leave the upload screen visible if restore fails.
+            } finally {
+                setRestoring(false);
+            }
+        }
+
+        restoreSession();
+    }, []);
+
     const handleClick = () => {
         fileInputRef.current?.click();
     };
@@ -49,6 +73,7 @@ export default function Home() {
 
         setLoading(true);
         setError(null);
+        setStatusText("Uploading file...");
 
         try {
             const form = new FormData();
@@ -58,30 +83,23 @@ export default function Home() {
                 method: "POST",
                 body: form
             });
-            const uploadData: UploadResponse & { error?: string } = await uploadRes.json();
+            const uploadData: (AnalysisSnapshot & { error?: string }) = await uploadRes.json();
 
             if (!uploadRes.ok || uploadData.error) {
                 throw new Error(uploadData.error ?? "Upload failed.");
             }
 
-            const summaryRes = await fetch(`/api/summary?sessionId=${uploadData.sessionId}`);
-            const summaryData: Summary & { transactions?: Transaction[]; error?: string } = await summaryRes.json();
-
-            if (!summaryRes.ok || summaryData.error) {
-                throw new Error(summaryData.error ?? "Failed to fetch summary.");
-            }
+            setStatusText("Preparing your dashboard...");
+            await saveAnalysis(uploadData);
 
             setSessionId(uploadData.sessionId);
-            if (typeof window !== "undefined") {
-                window.localStorage.setItem("zeroClutterSessionId", uploadData.sessionId);
-            }
-
-            setSummary(summaryData as Summary);
-            setTransactions(summaryData.transactions || []);
+            setSummary(uploadData.summary);
+            setTransactions(uploadData.transactions.slice(0, 12));
         } catch (err: any) {
             setError(err.message);
         } finally {
             setLoading(false);
+            setStatusText(null);
         }
     };
 
@@ -113,9 +131,27 @@ export default function Home() {
                 </p>
             </header>
 
-            <div className="upload-box" onClick={handleClick} style={{ cursor: "pointer" }}>
-                <h3>Drop transaction file here</h3>
-                <p style={{ color: "#6b7280" }}>CSV, JSON, XLSX, or XLS</p>
+            <div
+                className={`upload-box ${loading ? "upload-box-loading" : ""}`}
+                onClick={() => !loading && handleClick()}
+                style={{ cursor: loading ? "progress" : "pointer" }}
+            >
+                {loading ? (
+                    <>
+                        <div className="loader-dots" aria-hidden="true">
+                            <span />
+                            <span />
+                            <span />
+                        </div>
+                        <h3>{statusText ?? "Processing file..."}</h3>
+                        <p style={{ color: "#6b7280" }}>This can take a little longer for large Excel files.</p>
+                    </>
+                ) : (
+                    <>
+                        <h3>Drop transaction file here</h3>
+                        <p style={{ color: "#6b7280" }}>CSV, JSON, XLSX, or XLS</p>
+                    </>
+                )}
             </div>
 
             <input
@@ -125,7 +161,8 @@ export default function Home() {
                 onChange={handleFileChange}
             />
 
-            {loading && <p style={{ marginTop: "20px" }}>Processing...</p>}
+            {restoring && <p style={{ marginTop: "20px", color: "#6b7280" }}>Restoring your last analysis...</p>}
+            {loading && <p style={{ marginTop: "20px", color: "#6b7280" }}>{statusText ?? "Processing..."}</p>}
             {error && <p style={{ marginTop: "20px", color: "red" }}>Error: {error}</p>}
 
             {summary && (
@@ -162,22 +199,40 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+                    <div style={{ display: "flex", gap: "20px", marginTop: "20px", flexWrap: "wrap" }}>
                         <button
                             className="btn-ghost"
+                            disabled={!sessionId || loading}
                             onClick={() => sessionId && router.push(`/transactions?sessionId=${sessionId}`)}
                         >
                             View transactions
                         </button>
                         <button
                             className="btn-ghost"
+                            disabled={!sessionId || loading}
                             onClick={() => sessionId && router.push(`/forecast?sessionId=${sessionId}`)}
                         >
                             Future prediction
                         </button>
+                        <button
+                            className="btn-ghost"
+                            disabled={loading}
+                            onClick={async () => {
+                                await clearAnalysis();
+                                setSessionId(null);
+                                setSummary(null);
+                                setTransactions(null);
+                                setError(null);
+                            }}
+                        >
+                            Clear analysis
+                        </button>
                     </div>
 
-                    <h2 style={{ marginTop: "50px" }}>TRANSACTIONS</h2>
+                    <h2 style={{ marginTop: "50px" }}>RECENT TRANSACTIONS</h2>
+                    <p style={{ color: "#6b7280", marginTop: "6px", marginBottom: "12px" }}>
+                        Showing a preview here for speed. Open the transactions page for the full list.
+                    </p>
 
                     <table style={{ width: "100%", marginTop: "20px" }}>
                         <thead>
