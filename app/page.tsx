@@ -1,11 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [summary, setSummary] = useState<any>(null);
+    const [transactions, setTransactions] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     const handleClick = () => {
         fileInputRef.current?.click();
@@ -15,27 +18,51 @@ export default function Home() {
         const file = e.target.files[0];
         if (!file) return;
 
-        const formData = new FormData();
-        formData.append("file", file);
+        setLoading(true);
 
-        try {
-            setLoading(true);
+        // ⛔ skip backend for now
 
-            await fetch("/api/upload", {
-                method: "POST",
-                body: formData,
-            });
+        // ✅ FAKE DATA (simulate AI output)
+        const fakeData = {
+            summary: {
+                daily: 6633,
+                balance: 200000,
+                totalIn: 250000,
+                totalOut: 50000,
+                committed: 0,
+                available: 200000,
+            },
+            transactions: [
+                {
+                    date: "Mar 05, 2019",
+                    description: "MICRO ATM GST DATED 02031",
+                    category: "CASH WITHDRAWAL",
+                    amount: -5,
+                    type: "debit",
+                },
+                {
+                    date: "Mar 05, 2019",
+                    description: "BEAT CSH PKP DEL GURGA 80",
+                    category: "FOOD & DINING",
+                    amount: -500,
+                    type: "debit",
+                },
+                {
+                    date: "Mar 05, 2019",
+                    description: "AEPS INCOME",
+                    category: "OTHER",
+                    amount: 1000,
+                    type: "credit",
+                },
+            ],
+        };
 
-            const res = await fetch("/api/summary");
-            const data = await res.json();
-
-            setSummary(data);
-        } catch (err) {
-            console.error(err);
-            alert("Something went wrong");
-        } finally {
+        // simulate delay (feels real)
+        setTimeout(() => {
+            setSummary(fakeData.summary);
+            setTransactions(fakeData.transactions);
             setLoading(false);
-        }
+        }, 1000);
     };
 
     return (
@@ -90,21 +117,76 @@ export default function Home() {
             {loading && <p style={{ marginTop: "20px" }}>Processing...</p>}
 
             {summary && (
-                <div style={{ marginTop: "40px" }}>
-                    <h1 style={{ fontSize: "50px" }}>
-                        ₹{summary.daily} / day
+                <>
+                    {/* DASHBOARD */}
+                    <h5 style={{ color: "#6b7280", marginTop: "40px", fontSize: "16px", opacity: "0.4" }}>30-day Runway</h5>
+                    <h1 style={{ fontSize: "50px", marginTop: "10px" }}>
+                        ₹{summary.daily} <span style={{ color: "#6b7280", marginTop: "10px", fontSize: "16px", fontWeight: "400" }}>/ day safe-to-spend</span>
                     </h1>
+                    <h5 style={{ color: "#6b7280", marginTop: "10px", fontWeight: "400" }}>Next 30 days. Updated Now.</h5>
 
-                    <p style={{ marginTop: "10px", color: "green" }}>
-                        Updated just now
-                    </p>
+                    <div className="summary-container">
 
-                    <div style={{ marginTop: "20px" }}>
-                        <p>Total In: ₹{summary.totalIn}</p>
-                        <p>Total Out: ₹{summary.totalOut}</p>
-                        <p>Balance: ₹{summary.balance}</p>
+                        <div className="summary-item">
+                            <p className="label">total out</p>
+                            <p className="value red">-₹{summary.totalOut}</p>
+                            <p className="sub">this period</p>
+                        </div>
+
+                        <div className="summary-item">
+                            <p className="label">total in</p>
+                            <p className="value green">+₹{summary.totalIn}</p>
+                            <p className="sub">this period</p>
+                        </div>
+
+                        <div className="summary-item">
+                            <p className="label">balance</p>
+                            <p className="value">₹{summary.balance}</p>
+                            <p className="sub">available</p>
+                        </div>
+
                     </div>
-                </div>
+
+                    <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+
+                        <button
+                            className="btn-ghost"
+                            onClick={() => router.push("/transactions")}
+                        >
+                            View transactions
+                        </button>
+
+                        <button className="btn-ghost">
+                            Future prediction
+                        </button>
+
+                    </div>
+
+                    {/* TRANSACTIONS */}
+                    <h2 style={{ marginTop: "50px" }}>TRANSACTIONS</h2>
+
+                    <table style={{ width: "100%", marginTop: "20px" }}>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {transactions.map((t, i) => (
+                                <tr key={i}>
+                                    <td>{t.date}</td>
+                                    <td>{t.description}</td>
+                                    <td>{t.category}</td>
+                                    <td>₹{Math.abs(t.amount)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </>
             )}
         </main>
     );
