@@ -4,8 +4,8 @@ export default function Home() {
 
             {/* NAVBAR */}
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "60px" }}>
-                <h2>Runway</h2>
-                <button className="btn-primary">Get Started</button>
+                <h2>Untangle</h2>
+
             </div>
 
             {/* HERO */}
@@ -22,16 +22,18 @@ export default function Home() {
                     Drop messy bank data. Get your safe-to-spend daily limit for the next 30 days.
                 </p>
 
-                <div style={{ marginTop: "30px", display: "flex", gap: "20px" }}>
-                    <button className="btn-primary">Upload CSV</button>
-                    <button className="btn-outline">See how it works</button>
-                </div>
             </div>
 
             {/* UPLOAD BOX */}
-            <div className="upload-box" style={{ marginBottom: "80px" }}>
-                <h3>Drop transaction file here</h3>
-                <p className="subtle">CSV or JSON from any bank</p>
+            <div className="upload" style={{ display: "flex align-items-center justify-content-center" }}>
+                <div className="upload-box" style={{ marginBottom: "30px" }}>
+                    <h3>Drop transaction file here</h3>
+                    <p className="subtle">CSV or JSON</p>
+                </div>
+                <div style={{ marginTop: "10px", marginBottom: "30px", display: "flex", gap: "20px" }}>
+                    <button className="btn-primary">Upload CSV</button>
+                    <button className="btn-outline">See how it works</button>
+                </div>
             </div>
 
             {/* RESULT SECTION */}

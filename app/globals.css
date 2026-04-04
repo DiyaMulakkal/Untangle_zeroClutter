@@ -4,7 +4,7 @@
     --bg: #ffffff;
     --text: #111111;
     --muted: #6b7280;
-    --accent: #b4ff3b;
+    --accent: #3852B4;
     --border: #e5e7eb;
 }
 
@@ -40,6 +40,7 @@ body {
 /* Buttons */
 .btn-primary {
     background: var(--accent);
+    color: #fff;
     padding: 12px 24px;
     border-radius: 6px;
     font-weight: 600;

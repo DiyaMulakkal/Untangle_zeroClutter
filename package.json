@@ -1,0 +1,35 @@
+{
+  "name": "untangle-zero-clutter",
+  "version": "1.0.0",
+  "description": "A wepage that gives a summary",
+  "homepage": "https://github.com/DiyaMulakkal/Untangle_zeroClutter#readme",
+  "bugs": {
+    "url": "https://github.com/DiyaMulakkal/Untangle_zeroClutter/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DiyaMulakkal/Untangle_zeroClutter.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^16.2.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "@types/react": "^19.2.14",
+    "typescript": "^6.0.2"
+  }
+}
