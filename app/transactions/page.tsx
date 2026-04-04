@@ -1,19 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function TransactionsPage() {
     const [search, setSearch] = useState("");
     const [type, setType] = useState("All");
     const [category, setCategory] = useState("All");
 
-    const transactions = [
-        { date: "Mar 05, 2019", desc: "Indiaforensic RUP SETT 050319-2C", category: "OTHER", amount: -5 },
-        { date: "Mar 05, 2019", desc: "MICRO ATM INC DATED 05031", category: "CASH WITHDRAWAL", amount: -5 },
-        { date: "Mar 05, 2019", desc: "BEAT CSH PKP DEL GURGA 80", category: "FOOD & DINING", amount: -840 },
-        { date: "Mar 05, 2019", desc: "Sweep Trf To: 40900036427", category: "TRANSFER", amount: -3200 },
-        { date: "Mar 05, 2019", desc: "MICRO ATM GST DATED 02031", category: "CASH WITHDRAWAL", amount: -299 },
-    ];
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const params = useSearchParams();
+    const sessionId = params.get("sessionId");
+
+    useEffect(() => {
+        if (!sessionId) return;
+
+        fetch(`/api/transactions?sessionId=${sessionId}`)
+            .then(res => res.json())
+            .then(data => {
+                console.log("Fetched transactions:", data); // debug
+                setTransactions(data);
+            });
+    }, [sessionId]);
 
     const filtered = transactions.filter((t) => {
         const matchesSearch =
@@ -87,7 +95,7 @@ export default function TransactionsPage() {
                     {filtered.map((t, i) => (
                         <tr key={i}>
                             <td>{t.date}</td>
-                            <td>{t.desc}</td>
+                            <td>{t.description}</td>
                             <td>{t.category}</td>
                             <td
                                 className={
