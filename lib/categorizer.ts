@@ -122,16 +122,25 @@ const CATEGORY_RULES: CategoryRule[] = [
 
 // ─── Categorize a single transaction ───────────────────────────────────────
 
-export function categorize(description: string): { type: TransactionType; category: string } {
-    const desc = description.toLowerCase();
+export function categorize(tx: Transaction): { type: TransactionType; category: string } {
+    const desc = tx.description.toLowerCase();
+    const merchant = tx.merchant.toLowerCase();
 
+    // Priority 1: Merchant/Description based matching
     for (const rule of CATEGORY_RULES) {
-        if (rule.keywords.some((kw) => desc.includes(kw.toLowerCase()))) {
+        if (rule.keywords.some((kw) => 
+            merchant.includes(kw.toLowerCase()) || 
+            desc.includes(kw.toLowerCase())
+        )) {
             return { type: rule.type, category: rule.category };
         }
     }
 
-    // Positive amount → likely income fallback (caller decides)
+    // Priority 2: Income fallback
+    if (tx.amount > 0) {
+        return { type: "discretionary", category: "Income" };
+    }
+
     return { type: "discretionary", category: "Other" };
 }
 
@@ -139,12 +148,7 @@ export function categorize(description: string): { type: TransactionType; catego
 
 export function categorizeAll(transactions: Transaction[]): Transaction[] {
     return transactions.map((tx) => {
-        const { type, category } = categorize(tx.description);
-
-        // Auto-tag income by positive amount as final fallback
-        if (category === "Other" && tx.amount > 0) {
-            return { ...tx, type: "discretionary" as TransactionType, category: "Income" };
-        }
+        const { type, category } = categorize(tx);
         return { ...tx, type, category };
     });
 }

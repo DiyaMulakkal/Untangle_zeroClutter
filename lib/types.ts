@@ -7,6 +7,8 @@ export type TransactionType = "recurring" | "discretionary";
 export interface Transaction {
     date: string;
     description: string;
+    descriptionCleaned: string; // notebook: clean_text()
+    merchant: string;          // notebook: extract_merchant()
     amount: number;       // positive = credit/income, negative = debit/expense
     category: string;
     account: string;      // logical account name

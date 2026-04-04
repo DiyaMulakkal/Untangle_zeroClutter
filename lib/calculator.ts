@@ -41,8 +41,17 @@ export function calculateSummary(
     const totalExpenses = expenseTx.reduce((s, t) => s + Math.abs(t.amount), 0);
     const netFlow = totalIncome - totalExpenses;
 
-    // Use user-supplied balance if provided, otherwise derive from transactions
-    const effectiveBalance = currentBalance !== undefined ? currentBalance : netFlow;
+    // Use user-supplied balance OR extract from late transaction OR derive from net
+    let effectiveBalance = currentBalance !== undefined ? currentBalance : netFlow;
+
+    // Direct Extraction from Statement (if available in Transaction list)
+    // We sort by date to find the most recent balance entry
+    const sortedByDate = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+    const lastTxWithBalance = [...sortedByDate].reverse().find(tx => tx.balance !== undefined);
+    
+    if (currentBalance === undefined && lastTxWithBalance?.balance !== undefined) {
+        effectiveBalance = lastTxWithBalance.balance;
+    }
 
     // ── Recurring vs Discretionary ───────────────────────────────────────────
     const recurringExpensesMonthly = expenseTx

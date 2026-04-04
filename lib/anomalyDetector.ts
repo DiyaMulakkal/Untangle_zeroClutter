@@ -19,7 +19,7 @@ export function annotateAnomalies(transactions: Transaction[]): Transaction[] {
     const stats = new Map<string, { mean: number; stdDev: number; count: number }>();
     for (const [cat, amounts] of grouped.entries()) {
         const count = amounts.length;
-        if (count < 3) continue; // need at least 3 to calculate decent stats
+        if (count < 5) continue; // Notebook: skip small data (uses if len(group) < 5)
         
         const sum = amounts.reduce((a, b) => a + b, 0);
         const mean = sum / count;
@@ -33,24 +33,24 @@ export function annotateAnomalies(transactions: Transaction[]): Transaction[] {
     // Annotate
     return transactions.map((tx) => {
         if (tx.amount >= 0) {
-            // we don't flag income anomalies currently
             return { ...tx, isAnomaly: false, anomalyReason: null };
         }
 
         const absAmount = Math.abs(tx.amount);
         const st = stats.get(tx.category);
 
-        if (!st) {
+        if (!st || st.stdDev === 0) {
             return { ...tx, isAnomaly: false, anomalyReason: null };
         }
 
-        // If the amount is more than 2 std devs away and also > 50% above the mean (to prevent false flags on tiny amounts)
-        if (absAmount > st.mean + 2 * st.stdDev && absAmount > st.mean * 1.5) {
+        const zScore = (absAmount - st.mean) / st.stdDev;
+
+        if (Math.abs(zScore) > 2) {
             const meanFormatted = Math.round(st.mean).toLocaleString();
             return {
                 ...tx,
                 isAnomaly: true,
-                anomalyReason: `Unusually high for '${tx.category}'. Average is around ₹${meanFormatted}.`,
+                anomalyReason: `Z-Score: ${zScore.toFixed(2)}. Unusually high for '${tx.category}'. Avg: ₹${meanFormatted}.`,
             };
         }
 

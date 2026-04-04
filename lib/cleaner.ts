@@ -49,6 +49,13 @@ const CREDIT_ALIASES = [
     "deposited", "Deposited",
 ];
 
+const BALANCE_ALIASES = [
+    "balance", "Balance", "BALANCE",
+    "running balance", "running_balance",
+    "closing balance", "closing_balance",
+    "balance amt", "Balance Amt", "BALANCE AMT",
+];
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function findColumn(obj: RawTransaction, aliases: string[]): string | undefined {
@@ -99,6 +106,29 @@ function parseDate(raw: string | number | undefined): string | null {
     }
 
     return null;
+}
+
+/**
+ * Notebook: clean_text()
+ * re.sub(r'\d+', '', text)
+ * re.sub(r'[/,:*.-]', ' ', text)
+ */
+export function cleanDescription(text: string): string {
+    return text.toLowerCase()
+        .replace(/\d+/g, "")          // remove digits
+        .replace(/[/,:*.-]/g, " ")    // replace special chars with space
+        .replace(/\s+/g, " ")         // collapse whitespace
+        .trim();
+}
+
+/**
+ * Notebook: extract_merchant()
+ * words[:2] (first 2 words)
+ */
+export function extractMerchant(cleaned: string): string {
+    const words = cleaned.split(" ");
+    if (words.length === 0 || !words[0]) return "unknown";
+    return words.slice(0, 2).join(" ");
 }
 
 // ─── Duplicate Detection ────────────────────────────────────────────────────
@@ -184,15 +214,29 @@ export function normalizeTransactions(
 
         if (amount === null || isNaN(amount) || amount === 0) { errors++; continue; }
 
+        const descriptionCleaned = cleanDescription(description);
+        const merchant = extractMerchant(descriptionCleaned);
+
+        // Optional: Extract balance
+        let balance: number | undefined = undefined;
+        const balanceKey = findColumn(row, BALANCE_ALIASES);
+        if (balanceKey) {
+            const b = parseAmount(row[balanceKey]);
+            if (b !== null) balance = b;
+        }
+
         transactions.push({
             date: parsedDate,
             description,
+            descriptionCleaned,
+            merchant,
             amount,
             account,
             type: "discretionary", // overwritten by categorizer
             category: "Other",     // overwritten by categorizer
             isAnomaly: false,
             anomalyReason: null,
+            balance,
         });
     }
 
