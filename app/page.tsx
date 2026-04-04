@@ -25,18 +25,18 @@ export default function Home() {
         const sign = value < 0 ? "-" : value > 0 ? "+" : "";
 
         if (absolute >= 10000000) {
-            return `${sign}Rs ${(absolute / 10000000).toFixed(2)} Cr`;
+            return `${sign}₹ ${(absolute / 10000000).toFixed(2)} Cr`;
         }
 
         if (absolute >= 100000) {
-            return `${sign}Rs ${(absolute / 100000).toFixed(2)} L`;
+            return `${sign}₹ ${(absolute / 100000).toFixed(2)} L`;
         }
 
         if (absolute >= 1000) {
-            return `${sign}Rs ${(absolute / 1000).toFixed(1)} K`;
+            return `${sign}₹ ${(absolute / 1000).toFixed(1)} K`;
         }
 
-        return `${sign}Rs ${formatCurrency(absolute)}`;
+        return `${sign}₹ ${formatCurrency(absolute)}`;
     }
 
     const handleClick = () => {
@@ -88,29 +88,33 @@ export default function Home() {
     return (
         <main
             style={{
-                maxWidth: "640px",
-                margin: "0 auto",
+                maxWidth: "1000px",
+                margin: "auto",
                 padding: "2.5rem 1.25rem 4rem",
                 minHeight: "100vh",
             }}
         >
-            <header style={{ marginBottom: "2.5rem" }}>
+            <header>
                 <h1
                     style={{
-                        fontSize: "clamp(1.6rem, 5vw, 2.25rem)",
-                        fontWeight: 800,
                         lineHeight: 1.1,
                         marginBottom: "0.5rem",
                     }}
                 >
-                    Zero-Clutter
-                    <br />
-                    <span style={{ color: "var(--green)" }}>Financial Clarity.</span>
+                    <h2 style={{ marginBottom: "60px", fontSize: "20px" }}>Untangle</h2>
+
+                    <p style={{ marginBottom: "10px", fontSize: "10px", color: "#6b7280", fontWeight: "500" }}>ZERO-CLUTTER FINANCIAL FORECASTER</p>
+
+                    <h1 style={{ fontSize: "45px", lineHeight: 1.1, fontWeight: "bold" }}>
+                        Know your <br />
+                        <span style={{ fontStyle: "italic", fontWeight: 400 }}>exact</span> runway. <br />
+                        Nothing else.
+                    </h1>
+
+                    <p style={{ color: "#6b7280", marginTop: "60px", fontSize: "10px", fontWeight: "500" }}>
+                        Drop messy bank data. Get your safe-to-spend daily limit for the next 30 days.
+                    </p>
                 </h1>
-                <p style={{ color: "#6b7280", fontSize: "12px", maxWidth: "400px" }}>
-                    Upload a messy bank CSV or JSON. Get your balance, runway, and safe
-                    daily spend instantly.
-                </p>
             </header>
 
             <div className="upload-box" onClick={handleClick} style={{ cursor: "pointer" }}>
@@ -125,6 +129,16 @@ export default function Home() {
                 onChange={handleFileChange}
             />
 
+            <div style={{ marginTop: "30px", display: "flex", gap: "20px" }}>
+                <button onClick={handleClick} className="btn-primary">
+                    Upload CSV
+                </button>
+
+                <button className="btn-outline">
+                    See how it works
+                </button>
+            </div>
+
             {loading && <p style={{ marginTop: "20px" }}>Processing...</p>}
             {error && <p style={{ marginTop: "20px", color: "red" }}>Error: {error}</p>}
 
@@ -132,7 +146,7 @@ export default function Home() {
                 <>
                     <h5 style={{ color: "#6b7280", marginTop: "40px", fontSize: "16px", opacity: "0.4" }}>30-day Runway</h5>
                     <h1 style={{ fontSize: "50px", marginTop: "10px" }}>
-                        Rs {formatCurrency(summary.safeToSpendPerDay)} <span style={{ color: "#6b7280", marginTop: "10px", fontSize: "16px", fontWeight: "400" }}>/ day safe-to-spend</span>
+                        ₹ {formatCurrency(summary.safeToSpendPerDay)} <span style={{ color: "#6b7280", marginTop: "10px", fontSize: "16px", fontWeight: "400" }}>/ day safe-to-spend</span>
                     </h1>
                     <h5 style={{ color: "#6b7280", marginTop: "10px", fontWeight: "400" }}>Next 30 days. Updated now.</h5>
                     {summary.warning && (
@@ -141,23 +155,23 @@ export default function Home() {
 
                     <div className="summary-container">
                         <div className="summary-item">
-                            <p className="label">total out</p>
+                            <p className="label">total spent</p>
                             <p className="value red summary-value">{formatCompactCurrency(-summary.totalExpenses)}</p>
-                            <p className="sub summary-full-value">Rs {formatCurrency(summary.totalExpenses)}</p>
+                            <p className="sub summary-full-value">₹ {formatCurrency(summary.totalExpenses)}</p>
                             <p className="sub">this period</p>
                         </div>
 
                         <div className="summary-item">
-                            <p className="label">total in</p>
+                            <p className="label">total income</p>
                             <p className="value green summary-value">{formatCompactCurrency(summary.totalIncome)}</p>
-                            <p className="sub summary-full-value">Rs {formatCurrency(summary.totalIncome)}</p>
+                            <p className="sub summary-full-value">₹ {formatCurrency(summary.totalIncome)}</p>
                             <p className="sub">this period</p>
                         </div>
 
                         <div className="summary-item">
                             <p className="label">balance</p>
                             <p className="value summary-value">{formatCompactCurrency(summary.currentBalance)}</p>
-                            <p className="sub summary-full-value">Rs {formatCurrency(summary.currentBalance)}</p>
+                            <p className="sub summary-full-value">₹ {formatCurrency(summary.currentBalance)}</p>
                             <p className="sub">available</p>
                         </div>
                     </div>
@@ -177,7 +191,7 @@ export default function Home() {
                         </button>
                     </div>
 
-                    <h2 style={{ marginTop: "50px" }}>TRANSACTIONS</h2>
+                    {/* <h2 style={{ marginTop: "50px" }}>TRANSACTIONS</h2>
 
                     <table style={{ width: "100%", marginTop: "20px" }}>
                         <thead>
@@ -196,7 +210,7 @@ export default function Home() {
                                     <td>{transaction.description}</td>
                                     <td>{transaction.category}</td>
                                     <td className={transaction.amount < 0 ? "amount-negative" : "amount-positive"}>
-                                        Rs {Math.abs(transaction.amount).toLocaleString("en-IN", {
+                                        ₹ {Math.abs(transaction.amount).toLocaleString("en-IN", {
                                             minimumFractionDigits: 2,
                                             maximumFractionDigits: 2,
                                         })}
@@ -204,7 +218,7 @@ export default function Home() {
                                 </tr>
                             ))}
                         </tbody>
-                    </table>
+                    </table> */}
                 </>
             )}
         </main>
