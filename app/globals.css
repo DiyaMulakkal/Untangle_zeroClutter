@@ -142,9 +142,9 @@ body {
 }
 
 .btn-ghost:hover {
-    background: rgba(61, 255, 160, 0.08);
-    color: var(--green);
-    border-color: var(--green);
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    border-color: #111111;
     transform: translateY(-1px);
 }
 
