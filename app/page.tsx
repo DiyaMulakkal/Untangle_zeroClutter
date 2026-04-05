@@ -18,51 +18,54 @@ export default function Home() {
         const file = e.target.files[0];
         if (!file) return;
 
-        setLoading(true);
+        //setLoading(true);
 
-        // ⛔ skip backend for now
+        // try {
+        //     const formData = new FormData();
+        //     formData.append("file", file);
 
-        // ✅ FAKE DATA (simulate AI output)
-        const fakeData = {
-            summary: {
-                daily: 6633,
-                balance: 200000,
-                totalIn: 250000,
-                totalOut: 50000,
-                committed: 0,
-                available: 200000,
-            },
-            transactions: [
-                {
-                    date: "Mar 05, 2019",
-                    description: "MICRO ATM GST DATED 02031",
-                    category: "CASH WITHDRAWAL",
-                    amount: -5,
-                    type: "debit",
-                },
-                {
-                    date: "Mar 05, 2019",
-                    description: "BEAT CSH PKP DEL GURGA 80",
-                    category: "FOOD & DINING",
-                    amount: -500,
-                    type: "debit",
-                },
-                {
-                    date: "Mar 05, 2019",
-                    description: "AEPS INCOME",
-                    category: "OTHER",
-                    amount: 1000,
-                    type: "credit",
-                },
-            ],
-        };
+        //     // 1. Upload file
+        //     const uploadRes = await fetch("/api/upload", {
+        //         method: "POST",
+        //         body: formData,
+        //     });
 
-        // simulate delay (feels real)
-        setTimeout(() => {
-            setSummary(fakeData.summary);
-            setTransactions(fakeData.transactions);
-            setLoading(false);
-        }, 1000);
+        //     const uploadData = await uploadRes.json();
+        //     localStorage.setItem("sessionId", uploadData.sessionId);
+        //     const sessionId = uploadData.sessionId;
+
+
+        //     // 2. Fetch summary
+        //     // const summaryRes = await fetch(`/api/summary?sessionId=${sessionId}`);
+        //     //const summaryData = await summaryRes.json();
+
+        //     // 3. Store
+        //     setSummary(summaryData.summary);
+        //     setTransactions(summaryData.transactions);
+
+        //     // 🔥 IMPORTANT: store sessionId
+
+
+        // } catch (err) {
+        //     console.error(err);
+        // }
+
+        //setLoading(false);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+        });
+
+        const data = await res.json();
+
+        console.log("UPLOAD DATA:", data);
+
+        // ✅ USE DATA DIRECTLY
+        setSummary(data.summary);
+        setTransactions(data.transactions);
     };
 
     return (
@@ -151,7 +154,10 @@ export default function Home() {
 
                         <button
                             className="btn-ghost"
-                            onClick={() => router.push("/transactions")}
+                            onClick={() => {
+                                const sessionId = localStorage.getItem("sessionId");
+                                router.push(`/transactions?sessionId=${sessionId}`);
+                            }}
                         >
                             View transactions
                         </button>
@@ -161,33 +167,8 @@ export default function Home() {
                         </button>
 
                     </div>
-
-                    {/* TRANSACTIONS */}
-                    <h2 style={{ marginTop: "50px" }}>TRANSACTIONS</h2>
-
-                    <table style={{ width: "100%", marginTop: "20px" }}>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Description</th>
-                                <th>Category</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {transactions.map((t, i) => (
-                                <tr key={i}>
-                                    <td>{t.date}</td>
-                                    <td>{t.description}</td>
-                                    <td>{t.category}</td>
-                                    <td>₹{Math.abs(t.amount)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
                 </>
             )}
         </main>
     );
-}
+};
