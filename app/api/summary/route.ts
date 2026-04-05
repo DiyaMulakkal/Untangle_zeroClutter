@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
         : undefined;
 
     return NextResponse.json(
-        { sessionId, ...entry.summary, transactions, forecast: entry.forecast, uploadMeta: entry.uploadMeta },
+        { sessionId, ...entry.summary, transactions, uploadMeta: entry.uploadMeta },
         { status: 200 }
     );
 }

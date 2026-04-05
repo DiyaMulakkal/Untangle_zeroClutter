@@ -38,6 +38,11 @@ export interface UploadResponse {
     categories: Record<string, number>;
 }
 
+export interface DateRange {
+    from: string;
+    to: string;
+}
+
 export interface Summary {
     sessionId: string;
     totalIncome: number;
@@ -79,5 +84,10 @@ export interface Forecast {
 export interface StorageEntry {
     transactions: Transaction[];
     summary: Omit<Summary, "sessionId">;
+    uploadMeta: Omit<UploadResponse, "sessionId">;
+}
+
+export interface SummaryResponse extends Summary {
+    transactions?: Transaction[];
     uploadMeta: Omit<UploadResponse, "sessionId">;
 }

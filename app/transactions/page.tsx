@@ -1,67 +1,107 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function TransactionsPage() {
+const PAGE_SIZE = 200;
+
+function TransactionsContent() {
     const [search, setSearch] = useState("");
     const [type, setType] = useState("All");
     const [category, setCategory] = useState("All");
-
     const [transactions, setTransactions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const deferredSearch = useDeferredValue(search);
+    const router = useRouter();
     const params = useSearchParams();
     const sessionId = params.get("sessionId");
 
     useEffect(() => {
-        if (!sessionId) return;
+        if (!sessionId) {
+            setError("Missing session. Please go back and upload a statement.");
+            setLoading(false);
+            return;
+        }
 
+        setLoading(true);
         fetch(`/api/transactions?sessionId=${sessionId}`)
-            .then(res => res.json())
-            .then(data => {
-                console.log("Fetched transactions:", data); // debug
-                setTransactions(data);
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || "Could not load transactions.");
+                }
+                return data;
+            })
+            .then((data) => {
+                setTransactions(Array.isArray(data) ? data : []);
+                setError(null);
+                setVisibleCount(PAGE_SIZE);
+            })
+            .catch((err: unknown) => {
+                setTransactions([]);
+                setError(err instanceof Error ? err.message : "Could not load transactions.");
+            })
+            .finally(() => {
+                setLoading(false);
             });
     }, [sessionId]);
 
-    const filtered = transactions.filter((t) => {
-        const matchesSearch =
-            search === "" ||
-            t.desc.toLowerCase().includes(search.toLowerCase());
+    const filtered = useMemo(() => {
+        const normalizedSearch = deferredSearch.trim().toLowerCase();
 
-        const matchesType =
-            type === "All" ||
-            (type === "Income" && t.amount > 0) ||
-            (type === "Expense" && t.amount < 0);
+        return transactions.filter((t) => {
+            const description = String(t.description ?? "").toLowerCase();
+            const matchesSearch =
+                normalizedSearch === "" || description.includes(normalizedSearch);
 
-        const matchesCategory =
-            category === "All" ||
-            t.category.toLowerCase() === category.toLowerCase();
+            const matchesType =
+                type === "All" ||
+                (type === "Income" && t.amount > 0) ||
+                (type === "Expense" && t.amount < 0);
 
-        return matchesSearch && matchesType && matchesCategory;
-    });
+            const matchesCategory =
+                category === "All" ||
+                String(t.category ?? "").toLowerCase() === category.toLowerCase();
 
-    const totalIn = 82000;
-    const totalOut = -4998;
-    const net = totalIn + totalOut;
+            return matchesSearch && matchesType && matchesCategory;
+        });
+    }, [transactions, deferredSearch, type, category]);
+
+    const visibleTransactions = filtered.slice(0, visibleCount);
+    const hasMore = visibleTransactions.length < filtered.length;
 
     return (
         <div style={{ padding: "40px", maxWidth: "1000px", margin: "auto" }}>
             <h2 style={{ marginBottom: "40px", opacity: "0.5" }}>Untangle</h2>
+            <button
+                className="btn-ghost"
+                style={{ marginBottom: "20px" }}
+                onClick={() => router.push("/")}
+            >
+                Back to home
+            </button>
 
             <h1 style={{ fontSize: "40px", fontWeight: "bold" }}>Transactions</h1>
             <hr style={{ margin: "20px 0", borderColor: "#e5e7eb" }} />
 
-            {/* Filters */}
             <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
                 <label style={{ fontSize: "12px", opacity: "0.5", marginTop: "10px" }}> TYPE</label>
-                <select className="dropdown" style={{ fontSize: "14px", fontWeight: "bold" }} value={type} onChange={(e) => setType(e.target.value)}>
+                <select className="dropdown" style={{ fontSize: "14px", fontWeight: "bold" }} value={type} onChange={(e) => {
+                    setType(e.target.value);
+                    setVisibleCount(PAGE_SIZE);
+                }}>
                     <option>All</option>
                     <option>Income</option>
                     <option>Expense</option>
                 </select>
 
                 <label style={{ fontSize: "12px", opacity: "0.5", marginTop: "10px" }}>CATEGORY</label>
-                <select className="dropdown" style={{ fontSize: "14px", fontWeight: "bold" }} value={category} onChange={(e) => setCategory(e.target.value)}>
+                <select className="dropdown" style={{ fontSize: "14px", fontWeight: "bold" }} value={category} onChange={(e) => {
+                    setCategory(e.target.value);
+                    setVisibleCount(PAGE_SIZE);
+                }}>
                     <option>All</option>
                     <option>Food</option>
                     <option>Shopping</option>
@@ -76,11 +116,21 @@ export default function TransactionsPage() {
                     className="search-box"
                     placeholder="Search transactions..."
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => {
+                        setSearch(e.target.value);
+                        setVisibleCount(PAGE_SIZE);
+                    }}
                 />
             </div>
 
-            {/* Table */}
+            {loading && <p style={{ color: "#6b7280" }}>Loading transactions...</p>}
+            {error && <p style={{ color: "#dc2626" }}>{error}</p>}
+            {!loading && !error && (
+                <p style={{ color: "#6b7280", marginBottom: "12px" }}>
+                    Showing {visibleTransactions.length} of {filtered.length} matching transactions
+                </p>
+            )}
+
             <table width="100%">
                 <thead>
                     <tr>
@@ -92,8 +142,8 @@ export default function TransactionsPage() {
                 </thead>
 
                 <tbody>
-                    {filtered.map((t, i) => (
-                        <tr key={i}>
+                    {visibleTransactions.map((t, i) => (
+                        <tr key={`${t.date}-${t.description}-${t.amount}-${i}`}>
                             <td>{t.date}</td>
                             <td>{t.description}</td>
                             <td>{t.category}</td>
@@ -108,23 +158,25 @@ export default function TransactionsPage() {
                     ))}
                 </tbody>
             </table>
-        </div >
+
+            {!loading && !error && hasMore && (
+                <div style={{ marginTop: "20px" }}>
+                    <button
+                        className="btn-ghost"
+                        onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+                    >
+                        Load more
+                    </button>
+                </div>
+            )}
+        </div>
     );
 }
 
-/* Card Component */
-function Card({ title, value, color }: any) {
+export default function TransactionsPage() {
     return (
-        <div
-            style={{
-                padding: "15px",
-                border: "1px solid #ddd",
-                borderRadius: "10px",
-                minWidth: "150px",
-            }}
-        >
-            <p style={{ color: "#888" }}>{title}</p>
-            <h2 style={{ color }}>{value}</h2>
-        </div>
+        <Suspense fallback={<div style={{ padding: "40px" }}>Loading...</div>}>
+            <TransactionsContent />
+        </Suspense>
     );
 }

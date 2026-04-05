@@ -1,134 +1,112 @@
 import { RawTransaction, Transaction } from "./types";
 
-// ─── Aliases ────────────────────────────────────────────────────────────────
-
 const DATE_ALIASES = ["date", "transaction date", "value date"];
 const DESC_ALIASES = ["description", "narration", "transaction details", "details"];
 const BALANCE_ALIASES = ["balance", "balance amt", "closing balance"];
-const AMOUNT_ALIASES = ["amount", "value", "withdrawal", "deposit", "withdrawal amt", "deposit amt"];
+const AMOUNT_ALIASES = ["amount", "value", "withdrawal", "deposit", "withdrawal amt", "deposit amt", "debit", "credit"];
 
 export const ALL_HEADER_ALIASES = [...DATE_ALIASES, ...DESC_ALIASES, ...BALANCE_ALIASES, ...AMOUNT_ALIASES];
 
-// ─────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────
+function normalizeKey(key: string) {
+    return key.toLowerCase().trim();
+}
+
+function findKey(row: RawTransaction, aliases: string[]) {
+    return Object.keys(row).find((key) => {
+        const normalized = normalizeKey(key);
+        return aliases.some((alias) => normalized.includes(alias));
+    });
+}
 
 function parseAmount(raw: any): number | null {
     if (raw === undefined || raw === null || raw === "") return null;
 
     const cleaned = String(raw)
-        .replace(/[₹,]/g, "")   // remove currency + commas
+        .replace(/[₹,]/g, "")
+        .replace(/\((.*)\)/, "-$1")
         .trim();
 
     const num = parseFloat(cleaned);
-    return isNaN(num) ? null : num;
+    return Number.isNaN(num) ? null : num;
 }
 
 function parseDate(raw: any): string | null {
     if (!raw) return null;
 
-    const d = new Date(raw);
-    if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
+    const direct = new Date(raw);
+    if (!Number.isNaN(direct.getTime())) {
+        return direct.toISOString().split("T")[0];
+    }
 
-    return null;
+    const text = String(raw).trim();
+    const match = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+    if (!match) return null;
+
+    const [, first, second, third] = match;
+    const year = third.length === 2 ? `20${third}` : third;
+    const parsed = new Date(`${year}-${second.padStart(2, "0")}-${first.padStart(2, "0")}`);
+
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toISOString().split("T")[0];
 }
-
-// ─────────────────────────────────────────────────────────────
-// MAIN NORMALIZER (FINAL FIXED)
-// ─────────────────────────────────────────────────────────────
 
 export function cleanTransactions(
     raw: RawTransaction[],
     account = "default"
 ): { transactions: Transaction[]; errors: number } {
-
     const transactions: Transaction[] = [];
     let errors = 0;
 
     for (const row of raw) {
         try {
-            // 🔍 DEBUG (remove later if you want)
-            // console.log(Object.keys(row));
+            const dateKey = findKey(row, DATE_ALIASES);
+            const descKey = findKey(row, DESC_ALIASES);
+            const balanceKey = findKey(row, BALANCE_ALIASES);
+            const debitKey = findKey(row, ["withdraw", "withdrawal", "debit"]);
+            const creditKey = findKey(row, ["deposit", "credit"]);
+            const amountKey = findKey(row, ["amount", "value"]);
 
-            // ─────────────────────────────
-            // ✅ DATE (force VALUE DATE)
-            // ─────────────────────────────
-            const dateKey = Object.keys(row).find(k =>
-                k.toLowerCase().includes("value date")
-            );
-
-            let parsedDate = dateKey ? parseDate(row[dateKey]) : null;
-
+            const parsedDate = dateKey ? parseDate(row[dateKey]) : null;
             if (!parsedDate) {
                 errors++;
                 continue;
             }
 
-            // ─────────────────────────────
-            // ✅ DESCRIPTION
-            // ─────────────────────────────
-            const descKey = Object.keys(row).find(k =>
-                k.toLowerCase().includes("description") ||
-                k.toLowerCase().includes("details") ||
-                k.toLowerCase().includes("narration")
-            );
-
-            const description = descKey
-                ? String(row[descKey]).trim()
-                : "Unknown";
-
+            const description = descKey ? String(row[descKey]).trim() : "Unknown";
             if (!description || description === "Unknown") {
                 errors++;
                 continue;
             }
 
-            // ─────────────────────────────
-            // 🔥 FINAL FIX: AMOUNT PARSING
-            // ─────────────────────────────
-            const debitKey = Object.keys(row).find(k =>
-                k.toLowerCase().includes("withdraw")
-            );
-
-            const creditKey = Object.keys(row).find(k =>
-                k.toLowerCase().includes("deposit")
-            );
-
             const debit = debitKey ? parseAmount(row[debitKey]) : null;
             const credit = creditKey ? parseAmount(row[creditKey]) : null;
+            const amountValue = amountKey ? parseAmount(row[amountKey]) : null;
 
             let amount: number | null = null;
 
-            if (credit !== null && credit > 0) {
-                amount = credit;
-            } else if (debit !== null && debit > 0) {
+            if (credit !== null && credit !== 0) {
+                amount = Math.abs(credit);
+            } else if (debit !== null && debit !== 0) {
                 amount = -Math.abs(debit);
+            } else if (amountValue !== null && amountValue !== 0) {
+                amount = amountValue;
             }
 
-            if (amount === null || isNaN(amount)) {
+            if (amount === null || Number.isNaN(amount)) {
                 errors++;
                 continue;
             }
 
-            // ❌ skip absurd values
             if (Math.abs(amount) > 1e7) continue;
 
-            // ─────────────────────────────
-            // ✅ BALANCE
-            // ─────────────────────────────
-            const balanceKey = Object.keys(row).find(k =>
-                k.toLowerCase().includes("balance")
-            );
-
-            let balance: number | undefined = undefined;
-
+            let balance: number | undefined;
             if (balanceKey) {
-                const b = parseAmount(row[balanceKey]);
-                if (b !== null) balance = b;
+                const parsedBalance = parseAmount(row[balanceKey]);
+                if (parsedBalance !== null) {
+                    balance = parsedBalance;
+                }
             }
 
-            // ─────────────────────────────
-            // PUSH TRANSACTION
-            // ─────────────────────────────
             transactions.push({
                 date: parsedDate,
                 description,
@@ -142,8 +120,7 @@ export function cleanTransactions(
                 anomalyReason: null,
                 balance,
             });
-
-        } catch (e) {
+        } catch {
             errors++;
         }
     }
@@ -151,9 +128,6 @@ export function cleanTransactions(
     return { transactions, errors };
 }
 
-/**
- * Removes duplicate transactions based on date, description and amount.
- */
 export function detectDuplicates(transactions: Transaction[]): Transaction[] {
     const seen = new Set<string>();
     return transactions.filter((tx) => {
@@ -164,9 +138,6 @@ export function detectDuplicates(transactions: Transaction[]): Transaction[] {
     });
 }
 
-/**
- * Removes internal transfers between accounts based on common keywords.
- */
 export function detectTransfers(transactions: Transaction[]): Transaction[] {
     const TRANSFER_KEYWORDS = [
         "transfer",
